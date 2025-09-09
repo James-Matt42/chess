@@ -1,9 +1,6 @@
 package chess;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Represents a single chess piece
@@ -55,25 +52,26 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ChessPiece piece = board.getPiece(myPosition);
-        if (piece.getPieceType() == PieceType.BISHOP) {
-            List<ChessMove> moves = new ArrayList<>();
-            for (int i = 1; i < 9; i++) {
-                if (i == myPosition.getRow()) {
-                    continue;
-                }
-
-                int col_less = myPosition.getColumn() - (myPosition.getRow() - i);
-                int col_more = myPosition.getColumn() + (myPosition.getRow() - i);
-
-                if (col_less > 0 && col_less < 9) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(i, col_less), null));
-                }
-                if (col_more > 0 && col_more < 9) {
-                    moves.add(new ChessMove(myPosition, new ChessPosition(i, col_more), null));
-                }
+        var piece = board.getPiece(myPosition);
+        switch (piece.getPieceType()) {
+            case BISHOP -> {
+                return bishopPieceMoves(board, myPosition);
             }
-            return moves;
+            case KING -> {
+                return kingPieceMoves(board, myPosition);
+            }
+            case KNIGHT -> {
+                return knightPieceMoves(board, myPosition);
+            }
+            case PAWN -> {
+                return pawnPieceMoves(board, myPosition);
+            }
+            case QUEEN -> {
+                return queenPieceMoves(board, myPosition);
+            }
+            case ROOK -> {
+                return rookPieceMoves(board, myPosition);
+            }
         }
         return List.of();
     }
@@ -90,5 +88,65 @@ public class ChessPiece {
     @Override
     public int hashCode() {
         return Objects.hash(pieceColor, type);
+    }
+
+    private boolean validPosition(int row, int col) {
+        return row > 0 && row < 9 && col > 0 && col < 9;
+    }
+
+    private boolean validPosition(ChessPosition position) {
+        return position.getRow() > 0 && position.getRow() < 9 && position.getColumn() > 0 && position.getColumn() < 9;
+    }
+
+    private void addDiagonalMoves(HashSet<ChessMove> moves, int rowOffset, int colOffset, int rowLimit, ChessPosition myPosition, ChessPiece piece, ChessBoard board) {
+        int col = myPosition.getColumn() + colOffset;
+        for (int row = myPosition.getRow() + rowOffset; row != rowLimit; row += rowOffset) {
+            ChessPosition pos = new ChessPosition(row, col);
+            if (validPosition(pos)) {
+                if (board.getPiece(pos) == null) {
+                    moves.add(new ChessMove(myPosition, pos, piece.getPieceType()));
+                } else {
+                    if (board.getPiece(pos).getTeamColor() != piece.getTeamColor()) {
+                        moves.add(new ChessMove(myPosition, pos, piece.getPieceType()));
+                    }
+                    break;
+                }
+            } else {
+                break;
+            }
+            col += colOffset;
+        }
+    }
+
+    private Collection<ChessMove> bishopPieceMoves(ChessBoard board, ChessPosition myPosition) {
+        ChessPiece piece = board.getPiece(myPosition);
+        var moves = new HashSet<ChessMove>();
+
+        addDiagonalMoves(moves, 1, 1, 9, myPosition, piece, board);
+        addDiagonalMoves(moves, 1, -1, 9, myPosition, piece, board);
+        addDiagonalMoves(moves, -1, 1, 0, myPosition, piece, board);
+        addDiagonalMoves(moves, -1, -1, 0, myPosition, piece, board);
+
+        return moves;
+    }
+
+    private Collection<ChessMove> kingPieceMoves(ChessBoard board, ChessPosition myPosition) {
+        return List.of();
+    }
+
+    private Collection<ChessMove> knightPieceMoves(ChessBoard board, ChessPosition myPosition) {
+        return List.of();
+    }
+
+    private Collection<ChessMove> pawnPieceMoves(ChessBoard board, ChessPosition myPosition) {
+        return List.of();
+    }
+
+    private Collection<ChessMove> queenPieceMoves(ChessBoard board, ChessPosition myPosition) {
+        return List.of();
+    }
+
+    private Collection<ChessMove> rookPieceMoves(ChessBoard board, ChessPosition myPosition) {
+        return List.of();
     }
 }
