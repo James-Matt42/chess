@@ -104,6 +104,12 @@ public class ChessPiece {
         }
     }
 
+    private void validateAndAdd(ChessPosition pos, ChessBoard board, ChessPiece piece, ChessPosition myPosition, HashSet<ChessMove> moves, ChessPiece.PieceType promotionPiece) {
+        if (validPosition(pos) && (board.getPiece(pos) == null || (board.getPiece(pos).getTeamColor() != piece.getTeamColor()))) {
+            moves.add(new ChessMove(myPosition, pos, promotionPiece));
+        }
+    }
+
     private void addDiagonalMoves(HashSet<ChessMove> moves, int rowOffset, int colOffset, int rowLimit, ChessPosition myPosition, ChessPiece piece, ChessBoard board) {
         int col = myPosition.getColumn() + colOffset;
         for (int row = myPosition.getRow() + rowOffset; row != rowLimit; row += rowOffset) {
@@ -195,7 +201,35 @@ public class ChessPiece {
         int col = myPosition.getColumn();
         var moves = new HashSet<ChessMove>();
 
+        int rowOffset;
+        if (piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
+            rowOffset = 1;
+        } else {
+            rowOffset = -1;
+        }
 
+//        Validate normal positions
+        for (int new_col = col - 1; new_col < col + 2; new_col++) {
+            var pos = new ChessPosition(row + rowOffset, new_col);
+//            validateAndAdd(pos, board, piece, myPosition, moves);
+            if ((validPosition(pos) && new_col == col && board.getPiece(pos) == null) || (validPosition(pos) && new_col != col && board.getPiece(pos) != null && board.getPiece(pos).getTeamColor() != piece.getTeamColor())) {
+                if (piece.getTeamColor() == ChessGame.TeamColor.WHITE && row + rowOffset == 8 || piece.getTeamColor() == ChessGame.TeamColor.BLACK && row + rowOffset == 1) {
+                    moves.add(new ChessMove(myPosition, pos, PieceType.QUEEN));
+                    moves.add(new ChessMove(myPosition, pos, PieceType.BISHOP));
+                    moves.add(new ChessMove(myPosition, pos, PieceType.ROOK));
+                    moves.add(new ChessMove(myPosition, pos, PieceType.KNIGHT));
+                } else {
+                    moves.add(new ChessMove(myPosition, pos, null));
+                }
+            }
+        }
+//        Validate beginning positions
+        if (piece.getTeamColor() == ChessGame.TeamColor.WHITE && row == 2 || piece.getTeamColor() == ChessGame.TeamColor.BLACK && row == 7) {
+            var pos = new ChessPosition(row + (2 * rowOffset), col);
+            if (validPosition(pos) && board.getPiece(pos) == null && board.getPiece(new ChessPosition(row + rowOffset, col)) == null) {
+                moves.add(new ChessMove(myPosition, pos, null));
+            }
+        }
         return moves;
     }
 
