@@ -241,12 +241,8 @@ public class ChessPiece {
     }
 
     private Collection<ChessMove> queenPieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ChessPiece piece = board.getPiece(myPosition);
-        int row = myPosition.getRow();
-        int col = myPosition.getColumn();
-        var moves = new HashSet<ChessMove>();
-
-
+        var moves = bishopPieceMoves(board, myPosition);
+        moves.addAll(rookPieceMoves(board, myPosition));
         return moves;
     }
 
@@ -261,14 +257,14 @@ public class ChessPiece {
 //        Offset is +1 the first time and -1 the second time
         for (int i = 0; i < 2; i++) {
             int new_row = row + offset;
-            for (var pos = new ChessPosition(new_row, col); validPosition(pos); new_row++) {
+            for (var pos = new ChessPosition(new_row, col); validPosition(pos); new_row += offset) {
                 if (addLinePiece(moves, myPosition, piece, board, pos)) {
                     break;
                 }
                 pos = new ChessPosition(new_row + offset, col);
             }
             int new_col = col + offset;
-            for (var pos = new ChessPosition(row, new_col); validPosition(new ChessPosition(row, new_col)); new_col++) {
+            for (var pos = new ChessPosition(row, new_col); validPosition(new ChessPosition(row, new_col)); new_col += offset) {
                 if (addLinePiece(moves, myPosition, piece, board, pos)) {
                     break;
                 }
