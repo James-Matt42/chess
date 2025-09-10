@@ -104,10 +104,10 @@ public class ChessPiece {
             ChessPosition pos = new ChessPosition(row, col);
             if (validPosition(pos)) {
                 if (board.getPiece(pos) == null) {
-                    moves.add(new ChessMove(myPosition, pos, piece.getPieceType()));
+                    moves.add(new ChessMove(myPosition, pos, null));
                 } else {
                     if (board.getPiece(pos).getTeamColor() != piece.getTeamColor()) {
-                        moves.add(new ChessMove(myPosition, pos, piece.getPieceType()));
+                        moves.add(new ChessMove(myPosition, pos, null));
                     }
                     break;
                 }

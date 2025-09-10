@@ -46,6 +46,15 @@ public class ChessPosition {
         }
         ChessPosition that = (ChessPosition) o;
         return row == that.row && column == that.column;
+/*
+        Test code for determining equality
+        if (!(row == that.row && column == that.column)) {
+            System.out.printf("%s != %s\n", row, that.row);
+            System.out.printf("%s != %s\n", column, that.column);
+            return false;
+        }
+        return true;
+*/
     }
 
     @Override

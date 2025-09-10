@@ -52,6 +52,17 @@ public class ChessMove {
         }
         ChessMove chessMove = (ChessMove) o;
         return Objects.equals(startPosition, chessMove.startPosition) && Objects.equals(endPosition, chessMove.endPosition) && promotionPiece == chessMove.promotionPiece;
+/*
+        Test code for determining equality
+        if (promotionPiece != chessMove.promotionPiece) {
+            System.out.printf("%s != %s\n", promotionPiece.toString(), promotionPiece);
+        }
+        if (!(Objects.equals(startPosition, chessMove.startPosition) && Objects.equals(endPosition, chessMove.endPosition) && promotionPiece == chessMove.promotionPiece)) {
+            System.out.printf("%s != %s", chessMove.toString(), this.toString());
+            return false;
+        }
+        return true;
+*/
     }
 
     @Override
