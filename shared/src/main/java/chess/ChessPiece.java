@@ -115,12 +115,7 @@ public class ChessPiece {
         for (int row = myPosition.getRow() + rowOffset; row != rowLimit; row += rowOffset) {
             ChessPosition pos = new ChessPosition(row, col);
             if (validPosition(pos)) { // Continues until it gets to an invalid position
-                if (board.getPiece(pos) == null) { // If there's nothing there, we continue
-                    moves.add(new ChessMove(myPosition, pos, null));
-                } else { // If there's a piece in the way, we check if we can take it, and then break
-                    if (board.getPiece(pos).getTeamColor() != piece.getTeamColor()) {
-                        moves.add(new ChessMove(myPosition, pos, null));
-                    }
+                if (addLinePiece(moves, myPosition, piece, board, pos)) {
                     break;
                 }
             } else { // If the position is invalid, we break
@@ -128,6 +123,18 @@ public class ChessPiece {
             }
             col += colOffset;
         }
+    }
+
+    private boolean addLinePiece(HashSet<ChessMove> moves, ChessPosition myPosition, ChessPiece piece, ChessBoard board, ChessPosition pos) {
+        if (board.getPiece(pos) == null) { // If there's nothing there, we continue
+            moves.add(new ChessMove(myPosition, pos, null));
+        } else { // If there's a piece in the way, we check if we can take it, and then break
+            if (board.getPiece(pos).getTeamColor() != piece.getTeamColor()) {
+                moves.add(new ChessMove(myPosition, pos, null));
+            }
+            return true;
+        }
+        return false;
     }
 
     private Collection<ChessMove> bishopPieceMoves(ChessBoard board, ChessPosition myPosition) {
@@ -249,7 +256,26 @@ public class ChessPiece {
         int col = myPosition.getColumn();
         var moves = new HashSet<ChessMove>();
 
+        int offset = 1;
 
+//        Offset is +1 the first time and -1 the second time
+        for (int i = 0; i < 2; i++) {
+            int new_row = row + offset;
+            for (var pos = new ChessPosition(new_row, col); validPosition(pos); new_row++) {
+                if (addLinePiece(moves, myPosition, piece, board, pos)) {
+                    break;
+                }
+                pos = new ChessPosition(new_row + offset, col);
+            }
+            int new_col = col + offset;
+            for (var pos = new ChessPosition(row, new_col); validPosition(new ChessPosition(row, new_col)); new_col++) {
+                if (addLinePiece(moves, myPosition, piece, board, pos)) {
+                    break;
+                }
+                pos = new ChessPosition(row, new_col + offset);
+            }
+            offset *= -1;
+        }
         return moves;
     }
 }
