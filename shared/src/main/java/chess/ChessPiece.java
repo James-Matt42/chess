@@ -131,7 +131,24 @@ public class ChessPiece {
     }
 
     private Collection<ChessMove> kingPieceMoves(ChessBoard board, ChessPosition myPosition) {
-        return List.of();
+        ChessPiece piece = board.getPiece(myPosition);
+        int row = myPosition.getRow();
+        int col = myPosition.getColumn();
+        var moves = new HashSet<ChessMove>();
+
+        for (int new_row = row - 1; new_row < row + 2; new_row++) {
+            for (int new_col = col - 1; new_col < col + 2; new_col++) {
+                if (new_row == 0 && new_col == 0) {
+                    continue;
+                }
+                ChessPosition pos = new ChessPosition(new_row, new_col);
+                if (validPosition(pos) && (board.getPiece(pos) == null || (board.getPiece(pos).getTeamColor() != piece.getTeamColor()))) {
+                    moves.add(new ChessMove(myPosition, pos, null));
+                }
+            }
+        }
+
+        return moves;
     }
 
     private Collection<ChessMove> knightPieceMoves(ChessBoard board, ChessPosition myPosition) {
