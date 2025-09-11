@@ -12,10 +12,12 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
+    private final int RECURSE_LIMIT;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
+        RECURSE_LIMIT = 7;
     }
 
     /**
@@ -90,62 +92,51 @@ public class ChessPiece {
         return Objects.hash(pieceColor, type);
     }
 
-    private boolean validPosition(int row, int col) {
-        return row > 0 && row < 9 && col > 0 && col < 9;
+    private void addMove(ChessPosition start, int rowOffset, int colOffset, int numRepeats, ChessPiece piece, ChessBoard board, HashSet<ChessMove> moves) {
+        int rowOffset_copy = rowOffset;
+        int colOffset_copy = colOffset;
+        for (int i = 0; i < numRepeats; i++) {
+            ChessPosition pos = new ChessPosition(start.getRow() + rowOffset_copy, start.getColumn() + colOffset_copy);
+            if (validPosition(pos)) {
+                if (board.getPiece(pos) == null) {
+                    moves.add(new ChessMove(start, pos, null));
+                } else if (board.getPiece(pos).getTeamColor() != piece.getTeamColor()) {
+                    moves.add(new ChessMove(start, pos, null));
+                    return;
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+            rowOffset_copy += rowOffset;
+            colOffset_copy += colOffset;
+        }
     }
 
     private boolean validPosition(ChessPosition position) {
         return position.getRow() > 0 && position.getRow() < 9 && position.getColumn() > 0 && position.getColumn() < 9;
     }
 
-    private void validateAndAdd(ChessPosition pos, ChessBoard board, ChessPiece piece, ChessPosition myPosition, HashSet<ChessMove> moves) {
-        if (validPosition(pos) && (board.getPiece(pos) == null || (board.getPiece(pos).getTeamColor() != piece.getTeamColor()))) {
-            moves.add(new ChessMove(myPosition, pos, null));
-        }
+    private void addDiagonal(ChessPosition start, int numRepeats, ChessPiece piece, ChessBoard board, HashSet<ChessMove> moves) {
+        addMove(start, 1, 1, numRepeats, piece, board, moves);
+        addMove(start, 1, -1, numRepeats, piece, board, moves);
+        addMove(start, -1, 1, numRepeats, piece, board, moves);
+        addMove(start, -1, -1, numRepeats, piece, board, moves);
     }
 
-    private void validateAndAdd(ChessPosition pos, ChessBoard board, ChessPiece piece, ChessPosition myPosition, HashSet<ChessMove> moves, ChessPiece.PieceType promotionPiece) {
-        if (validPosition(pos) && (board.getPiece(pos) == null || (board.getPiece(pos).getTeamColor() != piece.getTeamColor()))) {
-            moves.add(new ChessMove(myPosition, pos, promotionPiece));
-        }
-    }
-
-    private void addDiagonalMoves(HashSet<ChessMove> moves, int rowOffset, int colOffset, int rowLimit, ChessPosition myPosition, ChessPiece piece, ChessBoard board) {
-        int col = myPosition.getColumn() + colOffset;
-        for (int row = myPosition.getRow() + rowOffset; row != rowLimit; row += rowOffset) {
-            ChessPosition pos = new ChessPosition(row, col);
-            if (validPosition(pos)) { // Continues until it gets to an invalid position
-                if (addLinePiece(moves, myPosition, piece, board, pos)) {
-                    break;
-                }
-            } else { // If the position is invalid, we break
-                break;
-            }
-            col += colOffset;
-        }
-    }
-
-    private boolean addLinePiece(HashSet<ChessMove> moves, ChessPosition myPosition, ChessPiece piece, ChessBoard board, ChessPosition pos) {
-        if (board.getPiece(pos) == null) { // If there's nothing there, we continue
-            moves.add(new ChessMove(myPosition, pos, null));
-        } else { // If there's a piece in the way, we check if we can take it, and then break
-            if (board.getPiece(pos).getTeamColor() != piece.getTeamColor()) {
-                moves.add(new ChessMove(myPosition, pos, null));
-            }
-            return true;
-        }
-        return false;
+    private void addRowCol(ChessPosition start, int numRepeats, ChessPiece piece, ChessBoard board, HashSet<ChessMove> moves) {
+        addMove(start, 1, 0, numRepeats, piece, board, moves);
+        addMove(start, -1, 0, numRepeats, piece, board, moves);
+        addMove(start, 0, 1, numRepeats, piece, board, moves);
+        addMove(start, 0, -1, numRepeats, piece, board, moves);
     }
 
     private Collection<ChessMove> bishopPieceMoves(ChessBoard board, ChessPosition myPosition) {
         ChessPiece piece = board.getPiece(myPosition);
         var moves = new HashSet<ChessMove>();
 
-        addDiagonalMoves(moves, 1, 1, 9, myPosition, piece, board);
-        addDiagonalMoves(moves, 1, -1, 9, myPosition, piece, board);
-        addDiagonalMoves(moves, -1, 1, 0, myPosition, piece, board);
-        addDiagonalMoves(moves, -1, -1, 0, myPosition, piece, board);
-
+        addDiagonal(myPosition, RECURSE_LIMIT, piece, board, moves);
         return moves;
     }
 
@@ -155,49 +146,24 @@ public class ChessPiece {
         int col = myPosition.getColumn();
         var moves = new HashSet<ChessMove>();
 
-//        Validate every surrounding position
-        for (int new_row = row - 1; new_row < row + 2; new_row++) {
-            for (int new_col = col - 1; new_col < col + 2; new_col++) {
-                if (new_row == 0 && new_col == 0) {
-                    continue;
-                }
-                ChessPosition pos = new ChessPosition(new_row, new_col);
-                validateAndAdd(pos, board, piece, myPosition, moves);
-            }
-        }
+        addDiagonal(myPosition, 1, piece, board, moves);
+        addRowCol(myPosition, 1, piece, board, moves);
 
         return moves;
     }
 
     private Collection<ChessMove> knightPieceMoves(ChessBoard board, ChessPosition myPosition) {
         ChessPiece piece = board.getPiece(myPosition);
-        int row = myPosition.getRow();
-        int col = myPosition.getColumn();
         var moves = new HashSet<ChessMove>();
 
-//        Iterate over possible positions by row
-//        i is a counter to help with iteration logic
-        int i = -2;
-        for (int new_row = row - 2; new_row < row + 3; new_row++) {
-            if (i == 0) {
-                i++;
-                continue;
-            }
-            ChessPosition pos;
-            ChessPosition pos2;
-//            Case that new_row == row - 2 || new_row == row + 2
-            if (i * i == 4) {
-                pos = new ChessPosition(new_row, col - 1);
-                pos2 = new ChessPosition(new_row, col + 1);
-            } else {  // Case that new_row == row - 1 || new_row == row + 1
-                pos = new ChessPosition(new_row, col - 2);
-                pos2 = new ChessPosition(new_row, col + 2);
-            }
-//            Validate both positions
-            validateAndAdd(pos, board, piece, myPosition, moves);
-            validateAndAdd(pos2, board, piece, myPosition, moves);
-            i++;
-        }
+        addMove(myPosition, 2, -1, 1, piece, board, moves);
+        addMove(myPosition, 2, 1, 1, piece, board, moves);
+        addMove(myPosition, 1, 2, 1, piece, board, moves);
+        addMove(myPosition, -1, 2, 1, piece, board, moves);
+        addMove(myPosition, -2, 1, 1, piece, board, moves);
+        addMove(myPosition, -2, -1, 1, piece, board, moves);
+        addMove(myPosition, -1, -2, 1, piece, board, moves);
+        addMove(myPosition, 1, -2, 1, piece, board, moves);
 
         return moves;
     }
@@ -241,37 +207,21 @@ public class ChessPiece {
     }
 
     private Collection<ChessMove> queenPieceMoves(ChessBoard board, ChessPosition myPosition) {
-        var moves = bishopPieceMoves(board, myPosition);
-        moves.addAll(rookPieceMoves(board, myPosition));
+        ChessPiece piece = board.getPiece(myPosition);
+        var moves = new HashSet<ChessMove>();
+
+        addRowCol(myPosition, RECURSE_LIMIT, piece, board, moves);
+        addDiagonal(myPosition, RECURSE_LIMIT, piece, board, moves);
+
         return moves;
     }
 
     private Collection<ChessMove> rookPieceMoves(ChessBoard board, ChessPosition myPosition) {
         ChessPiece piece = board.getPiece(myPosition);
-        int row = myPosition.getRow();
-        int col = myPosition.getColumn();
         var moves = new HashSet<ChessMove>();
 
-        int offset = 1;
+        addRowCol(myPosition, RECURSE_LIMIT, piece, board, moves);
 
-//        Offset is +1 the first time and -1 the second time
-        for (int i = 0; i < 2; i++) {
-            int new_row = row + offset;
-            for (var pos = new ChessPosition(new_row, col); validPosition(pos); new_row += offset) {
-                if (addLinePiece(moves, myPosition, piece, board, pos)) {
-                    break;
-                }
-                pos = new ChessPosition(new_row + offset, col);
-            }
-            int new_col = col + offset;
-            for (var pos = new ChessPosition(row, new_col); validPosition(new ChessPosition(row, new_col)); new_col += offset) {
-                if (addLinePiece(moves, myPosition, piece, board, pos)) {
-                    break;
-                }
-                pos = new ChessPosition(row, new_col + offset);
-            }
-            offset *= -1;
-        }
         return moves;
     }
 }
