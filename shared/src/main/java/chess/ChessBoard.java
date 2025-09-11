@@ -1,5 +1,8 @@
 package chess;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * A chessboard that can hold and rearrange chess pieces.
  * <p>
@@ -41,14 +44,88 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        throw new RuntimeException("Not implemented");
-/*
-        Something like this
-        for (ChessPiece[] row : board) {
-            for (ChessPiece piece : row) {
-                piece = null;
+        setBackRow(ChessGame.TeamColor.WHITE);
+        setBackRow(ChessGame.TeamColor.BLACK);
+        setPawns(ChessGame.TeamColor.WHITE);
+        setPawns(ChessGame.TeamColor.BLACK);
+        clearMiddleSpace();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ChessBoard that = (ChessBoard) o;
+        return Objects.deepEquals(board, that.board);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(board);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder boardString = new StringBuilder();
+        boardString.append("[");
+        for (int row = 1; row < 9; row++) {
+            boardString.append("[");
+            for (int col = 1; col < 9; col++) {
+                ChessPosition pos = new ChessPosition(row, col);
+                if (getPiece(pos) == null) {
+                    continue;
+                }
+                boardString.append(getPiece(pos).toString());
+                if (col < 8) {
+                    boardString.append(", ");
+                }
+            }
+            boardString.append("]");
+            if (row < 8) {
+                boardString.append(", ");
             }
         }
-*/
+        boardString.append("]");
+
+        return boardString.toString();
+    }
+
+    private void setBackRow(ChessGame.TeamColor color) {
+        int row;
+        if (color == ChessGame.TeamColor.WHITE) {
+            row = 0;
+        } else {
+            row = 7;
+        }
+        board[row][0] = new ChessPiece(color, ChessPiece.PieceType.ROOK);
+        board[row][1] = new ChessPiece(color, ChessPiece.PieceType.KNIGHT);
+        board[row][2] = new ChessPiece(color, ChessPiece.PieceType.BISHOP);
+        board[row][3] = new ChessPiece(color, ChessPiece.PieceType.QUEEN);
+        board[row][4] = new ChessPiece(color, ChessPiece.PieceType.KING);
+        board[row][5] = new ChessPiece(color, ChessPiece.PieceType.BISHOP);
+        board[row][6] = new ChessPiece(color, ChessPiece.PieceType.KNIGHT);
+        board[row][7] = new ChessPiece(color, ChessPiece.PieceType.ROOK);
+    }
+
+    private void setPawns(ChessGame.TeamColor color) {
+        int row;
+        if (color == ChessGame.TeamColor.WHITE) {
+            row = 1;
+        } else {
+            row = 6;
+        }
+
+        for (int i = 0; i < 8; i++) {
+            board[row][i] = new ChessPiece(color, ChessPiece.PieceType.PAWN);
+        }
+    }
+
+    private void clearMiddleSpace() {
+        for (int row = 2; row < 6; row++) {
+            for (int col = 0; col < 8; col++) {
+                board[row][col] = null;
+            }
+        }
     }
 }

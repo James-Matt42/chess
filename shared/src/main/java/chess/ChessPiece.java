@@ -92,6 +92,11 @@ public class ChessPiece {
         return Objects.hash(pieceColor, type);
     }
 
+    @Override
+    public String toString() {
+        return String.format("[%s:%s]", type.toString(), pieceColor.toString());
+    }
+
     private void addMove(ChessPosition start, int rowOffset, int colOffset, int numRepeats, ChessPiece piece, ChessBoard board, HashSet<ChessMove> moves) {
         int rowOffset_copy = rowOffset;
         int colOffset_copy = colOffset;
@@ -142,8 +147,6 @@ public class ChessPiece {
 
     private Collection<ChessMove> kingPieceMoves(ChessBoard board, ChessPosition myPosition) {
         ChessPiece piece = board.getPiece(myPosition);
-        int row = myPosition.getRow();
-        int col = myPosition.getColumn();
         var moves = new HashSet<ChessMove>();
 
         addDiagonal(myPosition, 1, piece, board, moves);
