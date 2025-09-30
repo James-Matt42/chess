@@ -85,6 +85,14 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
+        return isInCheckPrivate(teamColor, this.board);
+    }
+
+    private boolean isInCheck(TeamColor teamColor, ChessBoard board) {
+        return isInCheckPrivate(teamColor, board);
+    }
+
+    private boolean isInCheckPrivate(TeamColor teamColor, ChessBoard board) {
         TeamColor oppColor;
         if (teamColor == TeamColor.WHITE) {
             oppColor = TeamColor.BLACK;
@@ -110,7 +118,20 @@ public class ChessGame {
      */
     public boolean isInCheckmate(TeamColor teamColor) {
         var kingPos = board.findKing(teamColor);
-        return isInCheck(teamColor) && board.getPiece(kingPos).pieceMoves(board, kingPos) == null;
+//        return isInCheck(teamColor) && board.getPiece(kingPos).pieceMoves(board, kingPos) == null;
+        var checkNow = isInCheck(teamColor);
+        if (checkNow) {
+            var colorMoves = board.getColorMoves(teamColor);
+            for (var move : colorMoves) {
+                var copyBoard = board.copy();
+                copyBoard.makeMove(move);
+                if (!isInCheck(teamColor, copyBoard)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     /**

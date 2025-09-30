@@ -19,6 +19,10 @@ public class ChessBoard {
         this.board = new ChessPiece[8][8];
     }
 
+    private ChessBoard(ChessPiece[][] board) {
+        this.board = board;
+    }
+
     /**
      * Adds a chess piece to the chessboard
      *
@@ -95,6 +99,10 @@ public class ChessBoard {
         boardString.append("]");
 
         return boardString.toString();
+    }
+
+    public ChessBoard copy() {
+        return new ChessBoard(board);
     }
 
     public Collection<ChessPosition> getStartPositions(ChessGame.TeamColor color) {
