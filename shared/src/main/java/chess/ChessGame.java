@@ -53,15 +53,14 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-//         Make sure to check for check, checkmate, stalemate, etc.
 //         Also make sure to add en passant and castling
-//        return board.getPiece(startPosition).pieceMoves(board, startPosition);
         System.out.println(board);
         var piece = board.getPiece(startPosition);
         if (piece == null) {
             return null;
         }
-        return piece.pieceMoves(board, startPosition);
+        var pieceMoves = piece.pieceMoves(board, startPosition);
+        return movesThatDoNotLeadToCheck(pieceMoves, piece.getTeamColor());
     }
 
     /**
