@@ -85,7 +85,13 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        var positions = board.getEndPositions(teamColor);
+        TeamColor oppColor;
+        if (teamColor == TeamColor.WHITE) {
+            oppColor = TeamColor.BLACK;
+        } else {
+            oppColor = TeamColor.WHITE;
+        }
+        var positions = board.getEndPositions(oppColor);
         var kingPosition = board.findKing(teamColor);
 
         for (var position : positions) {
