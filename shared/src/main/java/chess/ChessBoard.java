@@ -1,6 +1,8 @@
 package chess;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 
 /**
@@ -11,10 +13,10 @@ import java.util.Objects;
  */
 public class ChessBoard {
 
-    private final ChessPiece[][] board = new ChessPiece[8][8];
+    private final ChessPiece[][] board;
 
     public ChessBoard() {
-
+        this.board = new ChessPiece[8][8];
     }
 
     /**
@@ -26,6 +28,10 @@ public class ChessBoard {
     public void addPiece(ChessPosition position, ChessPiece piece) {
 //        Takes in position as 1-based index and converts it to 0-based index on the squares board
         board[position.getRow() - 1][position.getColumn() - 1] = piece;
+    }
+
+    public void removePiece(ChessPosition position) {
+        board[position.getRow() - 1][position.getColumn() - 1] = null;
     }
 
     /**
@@ -89,6 +95,64 @@ public class ChessBoard {
         boardString.append("]");
 
         return boardString.toString();
+    }
+
+    public Collection<ChessPosition> getStartPositions(ChessGame.TeamColor color) {
+        var moves = getColorMoves(color);
+        var positions = new HashSet<ChessPosition>();
+        for (var move : moves) {
+            positions.add(move.getStartPosition());
+        }
+        return positions;
+    }
+
+    public Collection<ChessPosition> getEndPositions(ChessGame.TeamColor color) {
+        var moves = getColorMoves(color);
+        var positions = new HashSet<ChessPosition>();
+        for (var move : moves) {
+            positions.add(move.getEndPosition());
+        }
+        return positions;
+    }
+
+    public Collection<ChessMove> getColorMoves(ChessGame.TeamColor color) {
+        var moves = new HashSet<ChessMove>();
+        int rowIndex = 1;
+        for (var row : board) {
+            int colIndex = 1;
+            for (var piece : row) {
+                if (piece != null && piece.getTeamColor() == color) {
+                    moves.addAll(piece.pieceMoves(this, new ChessPosition(rowIndex, colIndex)));
+                }
+                colIndex++;
+            }
+            rowIndex++;
+        }
+
+        return moves;
+    }
+
+    public ChessPosition findKing(ChessGame.TeamColor color) {
+        int rowIndex = 1;
+        for (var row : board) {
+            int colIndex = 1;
+            for (var piece : row) {
+                if (piece != null && piece.getTeamColor() == color && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    return new ChessPosition(rowIndex, colIndex);
+                }
+                colIndex++;
+            }
+            rowIndex++;
+        }
+        throw new RuntimeException(String.format("%s king was not found", color.toString()));
+    }
+
+    public void makeMove(ChessMove move) {
+        var start = move.getStartPosition();
+        var end = move.getEndPosition();
+        var piece = getPiece(start);
+        removePiece(start);
+        addPiece(end, piece);
     }
 
     private void setBackRow(ChessGame.TeamColor color) {
