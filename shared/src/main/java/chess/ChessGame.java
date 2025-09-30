@@ -74,7 +74,7 @@ public class ChessGame {
         if (valid != null && valid.contains(move)) {
             board.makeMove(move);
         } else {
-            throw new InvalidMoveException(String.format("%s is not legal", move.toString()));
+            throw new InvalidMoveException(String.format("%s is not legal", move));
         }
     }
 
@@ -117,14 +117,14 @@ public class ChessGame {
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
-        var kingPos = board.findKing(teamColor);
-//        return isInCheck(teamColor) && board.getPiece(kingPos).pieceMoves(board, kingPos) == null;
         var checkNow = isInCheck(teamColor);
         if (checkNow) {
             var colorMoves = board.getColorMoves(teamColor);
             for (var move : colorMoves) {
-                var copyBoard = board.copy();
+                var copyBoard = new ChessBoard(board.getBoardCopy());
                 copyBoard.makeMove(move);
+                copyBoard.print();
+                board.print();
                 if (!isInCheck(teamColor, copyBoard)) {
                     return false;
                 }

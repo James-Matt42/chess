@@ -19,7 +19,7 @@ public class ChessBoard {
         this.board = new ChessPiece[8][8];
     }
 
-    private ChessBoard(ChessPiece[][] board) {
+    public ChessBoard(ChessPiece[][] board) {
         this.board = board;
     }
 
@@ -101,8 +101,51 @@ public class ChessBoard {
         return boardString.toString();
     }
 
-    public ChessBoard copy() {
-        return new ChessBoard(board);
+    public void print() {
+        StringBuilder boardString = new StringBuilder();
+        for (int rowIndex = 8; rowIndex > 0; rowIndex--) {
+            boardString.append("|");
+            for (int colIndex = 1; colIndex < 9; colIndex++) {
+                var piece = getPiece(new ChessPosition(rowIndex, colIndex));
+                if (piece == null) {
+                    boardString.append(" |");
+                } else {
+                    String pieceString;
+                    switch (piece.getPieceType()) {
+                        case KING -> pieceString = "k";
+                        case QUEEN -> pieceString = "q";
+                        case BISHOP -> pieceString = "b";
+                        case KNIGHT -> pieceString = "n";
+                        case ROOK -> pieceString = "r";
+                        case PAWN -> pieceString = "p";
+                        default -> pieceString = " ";
+                    }
+                    if (piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
+                        pieceString = pieceString.toUpperCase();
+                    }
+                    boardString.append(pieceString).append("|");
+                }
+            }
+            boardString.append("\n");
+        }
+        boardString.append("\n");
+        System.out.print(boardString);
+    }
+
+
+    public ChessPiece[][] getBoardCopy() {
+        ChessPiece[][] newBoard = new ChessPiece[8][8];
+
+        for (int rowIndex = 1; rowIndex < 9; rowIndex++) {
+            for (int colIndex = 1; colIndex < 9; colIndex++) {
+                var piece = getPiece(new ChessPosition(rowIndex, colIndex));
+                if (piece != null) {
+                    newBoard[rowIndex - 1][colIndex - 1] = new ChessPiece(piece.getTeamColor(), piece.getPieceType());
+                }
+            }
+        }
+
+        return newBoard;
     }
 
     public Collection<ChessPosition> getStartPositions(ChessGame.TeamColor color) {
