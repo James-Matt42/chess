@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 
 /**
@@ -120,16 +121,8 @@ public class ChessGame {
         var checkNow = isInCheck(teamColor);
         if (checkNow) {
             var colorMoves = board.getColorMoves(teamColor);
-            for (var move : colorMoves) {
-                var copyBoard = new ChessBoard(board.getBoardCopy());
-                copyBoard.makeMove(move);
-                copyBoard.print();
-                board.print();
-                if (!isInCheck(teamColor, copyBoard)) {
-                    return false;
-                }
-            }
-            return true;
+            var validMoves = movesThatDoNotLeadToCheck(colorMoves, teamColor);
+            return validMoves.isEmpty();
         }
         return false;
     }
@@ -142,8 +135,13 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        var kingPos = board.findKing(teamColor);
-        return !isInCheck(teamColor) && board.getColorMoves(teamColor) == null;
+        boolean checkNow = isInCheck(teamColor);
+        if (!checkNow) {
+            var colorMoves = board.getColorMoves(teamColor);
+            var validMoves = movesThatDoNotLeadToCheck(colorMoves, teamColor);
+            return validMoves.isEmpty();
+        }
+        return false;
     }
 
     /**
@@ -184,5 +182,17 @@ public class ChessGame {
                 "board=" + board +
                 ", player=" + player +
                 '}';
+    }
+
+    private Collection<ChessMove> movesThatDoNotLeadToCheck(Collection<ChessMove> moves, TeamColor color) {
+        var validMoves = new HashSet<ChessMove>();
+        for (var move : moves) {
+            var copyBoard = new ChessBoard(board.getBoardCopy());
+            copyBoard.makeMove(move);
+            if (!isInCheck(color, copyBoard)) {
+                validMoves.add(move);
+            }
+        }
+        return validMoves;
     }
 }
