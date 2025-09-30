@@ -201,7 +201,8 @@ public class ChessBoard {
     public void makeMove(ChessMove move) {
         var start = move.getStartPosition();
         var end = move.getEndPosition();
-        var piece = getPiece(start);
+        var promotionPiece = move.getPromotionPiece();
+        ChessPiece piece = promotionPiece == null ? getPiece(start) : new ChessPiece(getPiece(start).getTeamColor(), promotionPiece);
         removePiece(start);
         addPiece(end, piece);
     }

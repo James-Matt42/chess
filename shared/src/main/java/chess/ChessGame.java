@@ -70,9 +70,23 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
+//        Check if there's a piece in the starting position
+        var piece = board.getPiece(move.getStartPosition());
+        if (piece == null) {
+            throw new InvalidMoveException("Starting position is null");
+        }
+
+        //        Check if it's the player's turn
+        var color = piece.getTeamColor();
+        if (!color.equals(player)) {
+            throw new InvalidMoveException(String.format("%s tried to move during %s's turn", color, player.toString()));
+        }
+
+//        Check if the move is valid
         Collection<ChessMove> valid = validMoves(move.getStartPosition());
         if (valid != null && valid.contains(move)) {
             board.makeMove(move);
+            player = player == TeamColor.WHITE ? TeamColor.BLACK : TeamColor.WHITE;
         } else {
             throw new InvalidMoveException(String.format("%s is not legal", move));
         }
