@@ -75,6 +75,7 @@ public class ChessBoard {
         return Arrays.deepHashCode(board);
     }
 
+/*
     @Override
     public String toString() {
         StringBuilder boardString = new StringBuilder();
@@ -100,8 +101,10 @@ public class ChessBoard {
 
         return boardString.toString();
     }
+*/
 
-    public void print() {
+    @Override
+    public String toString() {
         StringBuilder boardString = new StringBuilder();
         for (int rowIndex = 8; rowIndex > 0; rowIndex--) {
             boardString.append("|");
@@ -129,7 +132,8 @@ public class ChessBoard {
             boardString.append("\n");
         }
         boardString.append("\n");
-        System.out.print(boardString);
+        return boardString.toString();
+//        System.out.print(boardString);
     }
 
 
@@ -184,6 +188,7 @@ public class ChessBoard {
     }
 
     public ChessPosition findKing(ChessGame.TeamColor color) {
+        System.out.print(toString());
         int rowIndex = 1;
         for (var row : board) {
             int colIndex = 1;
@@ -203,8 +208,36 @@ public class ChessBoard {
         var end = move.getEndPosition();
         var promotionPiece = move.getPromotionPiece();
         ChessPiece piece = promotionPiece == null ? getPiece(start) : new ChessPiece(getPiece(start).getTeamColor(), promotionPiece);
+
+//        Each function moves the proper rook of kills the proper pawn respectively if necessary
+        performCastle(start, end, move, piece);
+        performEnPassant(start, end, move, piece);
+
         removePiece(start);
         addPiece(end, piece);
+    }
+
+    private void performCastle(ChessPosition start, ChessPosition end, ChessMove move, ChessPiece piece) {
+        if (piece != null && piece.getPieceType() == ChessPiece.PieceType.KING) {
+            ChessPosition rookStart;
+            ChessPosition rookEnd;
+//            Left castle
+            if (start.getColumn() == 5 && end.getColumn() == 3) {
+                rookStart = new ChessPosition(start.getRow(), 1);
+                rookEnd = new ChessPosition(start.getRow(), 4);
+                removePiece(rookStart);
+                addPiece(rookEnd, new ChessPiece(piece.getTeamColor(), ChessPiece.PieceType.ROOK));
+            } else if (start.getColumn() == 5 && end.getColumn() == 7) { // Right castle
+                rookStart = new ChessPosition(start.getRow(), 8);
+                rookEnd = new ChessPosition(start.getRow(), 6);
+                removePiece(rookStart);
+                addPiece(rookEnd, new ChessPiece(piece.getTeamColor(), ChessPiece.PieceType.ROOK));
+            }
+        }
+    }
+
+    private void performEnPassant(ChessPosition start, ChessPosition end, ChessMove move, ChessPiece piece) {
+        return;
     }
 
     private void setBackRow(ChessGame.TeamColor color) {
