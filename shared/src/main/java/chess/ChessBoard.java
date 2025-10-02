@@ -209,15 +209,15 @@ public class ChessBoard {
         var promotionPiece = move.getPromotionPiece();
         ChessPiece piece = promotionPiece == null ? getPiece(start) : new ChessPiece(getPiece(start).getTeamColor(), promotionPiece);
 
-//        Each function moves the proper rook of kills the proper pawn respectively if necessary
-        performCastle(start, end, move, piece);
-        performEnPassant(start, end, move, piece);
+//        Each function moves the proper rook or kills the proper pawn respectively if necessary
+        performCastle(start, end, piece);
+        performEnPassant(start, end);
 
         removePiece(start);
         addPiece(end, piece);
     }
 
-    private void performCastle(ChessPosition start, ChessPosition end, ChessMove move, ChessPiece piece) {
+    private void performCastle(ChessPosition start, ChessPosition end, ChessPiece piece) {
         if (piece != null && piece.getPieceType() == ChessPiece.PieceType.KING) {
             ChessPosition rookStart;
             ChessPosition rookEnd;
@@ -236,8 +236,11 @@ public class ChessBoard {
         }
     }
 
-    private void performEnPassant(ChessPosition start, ChessPosition end, ChessMove move, ChessPiece piece) {
-        return;
+    private void performEnPassant(ChessPosition start, ChessPosition end) {
+//        Check that there's nothing in the diagonal spot being moved to
+        if (start.getColumn() != end.getColumn() && getPiece(end) == null) {
+            removePiece(new ChessPosition(start.getRow(), end.getColumn()));
+        }
     }
 
     private void setBackRow(ChessGame.TeamColor color) {

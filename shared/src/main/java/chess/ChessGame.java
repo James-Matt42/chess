@@ -1,8 +1,10 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Objects;
+
+import static java.lang.Math.abs;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -14,13 +16,13 @@ public class ChessGame {
 
     private ChessBoard board;
     private TeamColor player;
-    private Collection<ChessMove> moveHistory;
+    private final ArrayList<ChessMove> moveHistory;
 
     public ChessGame() {
         this.board = new ChessBoard();
         this.board.resetBoard();
         this.player = TeamColor.WHITE;
-        moveHistory = new HashSet<ChessMove>();
+        moveHistory = new ArrayList<>();
     }
 
     /**
@@ -64,6 +66,9 @@ public class ChessGame {
         var pieceMoves = piece.pieceMoves(board, startPosition);
         if (piece.getPieceType() == ChessPiece.PieceType.KING) {
             pieceMoves.addAll(addCastleMoves(piece.getTeamColor()));
+        }
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+            addEnPassant(piece.getTeamColor(), startPosition, pieceMoves);
         }
         return movesThatDoNotLeadToCheck(pieceMoves, piece.getTeamColor());
     }
@@ -199,7 +204,7 @@ public class ChessGame {
     }
 
     private Collection<ChessMove> movesThatDoNotLeadToCheck(Collection<ChessMove> moves, TeamColor color) {
-        var validMoves = new HashSet<ChessMove>();
+        var validMoves = new ArrayList<ChessMove>();
         for (var move : moves) {
             var copyBoard = new ChessBoard(board.getBoardCopy());
             copyBoard.makeMove(move);
@@ -211,7 +216,7 @@ public class ChessGame {
     }
 
     private Collection<ChessMove> addCastleMoves(TeamColor teamColor) {
-        var castleMoves = new HashSet<ChessMove>();
+        var castleMoves = new ArrayList<ChessMove>();
         int row = teamColor == TeamColor.WHITE ? 1 : 8;
         var kingPosition = new ChessPosition(row, 5);
         if (!isInCheck(teamColor) && !isNull(kingPosition)) {
@@ -260,6 +265,28 @@ public class ChessGame {
             }
         }
         return add;
+    }
+
+    private void addEnPassant(TeamColor teamColor, ChessPosition startPosition, Collection<ChessMove> moves) {
+        if (moveHistory.isEmpty()) {
+            return;
+        }
+        var prevMove = moveHistory.getLast();
+        var prevPieceStart = prevMove.getStartPosition();
+        var prevPieceEnd = prevMove.getEndPosition();
+        var prevPiece = board.getPiece(prevPieceEnd);
+//        Check to see if the previous piece moved was a pawn of opposite color
+        if (prevPiece != null && prevPiece.getPieceType() == ChessPiece.PieceType.PAWN && !prevPiece.getTeamColor().equals(teamColor)) {
+//            Check to see if the pawn moved two squares
+            if (abs(prevPieceStart.getRow() - prevPieceEnd.getRow()) == 2) {
+//                Check that the start position is in one of the two spots to perform en passant
+                if (startPosition.getRow() == prevPieceEnd.getRow() && abs(startPosition.getColumn() - prevPieceStart.getColumn()) == 1) {
+                    int newRow = (prevPieceStart.getRow() + prevPieceEnd.getRow()) / 2;
+                    int newCol = prevPieceStart.getColumn();
+                    moves.add(new ChessMove(startPosition, new ChessPosition(newRow, newCol), null));
+                }
+            }
+        }
     }
 
     private boolean isNull(ChessPosition position) {
