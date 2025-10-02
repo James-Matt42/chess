@@ -75,34 +75,6 @@ public class ChessBoard {
         return Arrays.deepHashCode(board);
     }
 
-/*
-    @Override
-    public String toString() {
-        StringBuilder boardString = new StringBuilder();
-        boardString.append("[");
-        for (int row = 1; row < 9; row++) {
-            boardString.append("[");
-            for (int col = 1; col < 9; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                if (getPiece(pos) == null) {
-                    continue;
-                }
-                boardString.append(getPiece(pos).toString());
-                if (col < 8) {
-                    boardString.append(", ");
-                }
-            }
-            boardString.append("]");
-            if (row < 8) {
-                boardString.append(", ");
-            }
-        }
-        boardString.append("]");
-
-        return boardString.toString();
-    }
-*/
-
     @Override
     public String toString() {
         StringBuilder boardString = new StringBuilder();
@@ -188,7 +160,7 @@ public class ChessBoard {
     }
 
     public ChessPosition findKing(ChessGame.TeamColor color) {
-        System.out.print(toString());
+//        System.out.print(toString());
         int rowIndex = 1;
         for (var row : board) {
             int colIndex = 1;
@@ -211,7 +183,7 @@ public class ChessBoard {
 
 //        Each function moves the proper rook or kills the proper pawn respectively if necessary
         performCastle(start, end, piece);
-        performEnPassant(start, end);
+        performEnPassant(start, end, piece);
 
         removePiece(start);
         addPiece(end, piece);
@@ -236,9 +208,9 @@ public class ChessBoard {
         }
     }
 
-    private void performEnPassant(ChessPosition start, ChessPosition end) {
+    private void performEnPassant(ChessPosition start, ChessPosition end, ChessPiece piece) {
 //        Check that there's nothing in the diagonal spot being moved to
-        if (start.getColumn() != end.getColumn() && getPiece(end) == null) {
+        if (piece != null && piece.getPieceType() == ChessPiece.PieceType.PAWN && start.getColumn() != end.getColumn() && getPiece(end) == null) {
             removePiece(new ChessPosition(start.getRow(), end.getColumn()));
         }
     }

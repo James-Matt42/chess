@@ -58,7 +58,7 @@ public class ChessGame {
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
 //         Also make sure to add en passant and castling
-        System.out.println(board);
+//        System.out.println(board);
         var piece = board.getPiece(startPosition);
         if (piece == null) {
             return null;
@@ -257,9 +257,6 @@ public class ChessGame {
                 var endPos = new ChessPosition(startPos.getRow(), startPos.getColumn() + rowOffset);
                 add = add & board.getPiece(endPos) == null;
                 copyBoard.makeMove(new ChessMove(kingPosition, endPos, null));
-//                        if (isInCheck(teamColor, copyBoard)) {
-//                            add = false;
-//                        }
                 add = add & !isInCheck(teamColor, copyBoard);
                 startPos = new ChessPosition(endPos.getRow(), endPos.getColumn());
             }
