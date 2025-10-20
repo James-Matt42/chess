@@ -2,14 +2,13 @@ package service;
 
 import chess.*;
 import dataaccess.DataAccess;
-import dataaccess.DataAccessException;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 public class UserService {
     private final DataAccess dataAccess;
+    private int gameID = 0;
 
     public UserService(DataAccess dataAccess) {
         this.dataAccess = dataAccess;
@@ -57,20 +56,28 @@ public class UserService {
     }
 
     public void logout(String authToken) {
-        if (authToken == null || authToken.isBlank()) {
-            throw new InvalidAuthException("unauthorized");
-        }
-
-        var authData = dataAccess.getAuth(authToken);
-
-        if (authData == null) {
-            throw new InvalidAuthException("unauthorized");
-        }
-
+        var authData = verifyAuth(authToken);
         dataAccess.deleteAuth(authData.authToken());
     }
 
-    public HashSet<GameData> listGames(String authToken) {
+    public HashSet<GameData> listGames(String authToken) throws InvalidAuthException {
+        verifyAuth(authToken);
+        return dataAccess.listGames();
+    }
+
+    public int createGame(String authToken, String gameName) throws BadRequestException, InvalidAuthException {
+        if (gameName == null || gameName.isBlank()) {
+            throw new BadRequestException("bad request");
+        }
+
+        verifyAuth(authToken);
+        this.gameID++;
+        var game = new GameData(gameID, "", "", gameName, new ChessGame());
+        dataAccess.createGame(game);
+        return gameID;
+    }
+
+    private AuthData verifyAuth(String authToken) throws InvalidAuthException {
         if (authToken == null || authToken.isBlank()) {
             throw new InvalidAuthException("unauthorized");
         }
@@ -81,9 +88,8 @@ public class UserService {
             throw new InvalidAuthException("unauthorized");
         }
 
-        return dataAccess.listGames();
+        return authData;
     }
-
 
     public static String generateAuthToken() {
         return UUID.randomUUID().toString();

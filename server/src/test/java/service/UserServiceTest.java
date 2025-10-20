@@ -1,8 +1,6 @@
 package service;
 
-import chess.AuthData;
-import chess.LoginRequest;
-import chess.UserData;
+import chess.*;
 import dataaccess.MemoryDataAccess;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.Test;
@@ -138,4 +136,39 @@ class UserServiceTest {
         });
     }
 
+    @Test
+    void createGame() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+
+        var gameName = "MyNewGame";
+        var gameID = service.createGame(authData.authToken(), gameName);
+        var sameGame = new GameData(gameID, "", "", gameName, new ChessGame());
+
+        var games = service.listGames(authData.authToken());
+
+        assertTrue(games.contains(sameGame));
+    }
+
+    @Test
+    void createGameInvalid() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+
+        var gameName = "MyNewGame";
+        var gameID = service.createGame(authData.authToken(), gameName);
+        var sameGame = new GameData(gameID, "", "", gameName, new ChessGame());
+
+        assertThrows(BadRequestException.class, () -> {
+            service.createGame(authData.authToken(), null);
+        });
+        assertThrows(BadRequestException.class, () -> {
+            service.createGame(authData.authToken(), "");
+        });
+        assertThrows(InvalidAuthException.class, () -> {
+            service.createGame("xyz", gameName);
+        });
+    }
 }
