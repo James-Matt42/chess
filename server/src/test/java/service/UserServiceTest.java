@@ -1,0 +1,64 @@
+package service;
+
+import chess.AuthData;
+import chess.LoginRequest;
+import chess.UserData;
+import dataaccess.MemoryDataAccess;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class UserServiceTest {
+
+    private final UserData user = new UserData("Joe", "myPassword", "jj@j.com");
+
+    private UserService newService() {
+        MemoryDataAccess db = new MemoryDataAccess();
+        return new UserService(db);
+    }
+
+    @Test
+    void clear() throws Exception {
+        var service = newService();
+        service.register(user);
+        service.clear();
+        assertThrows(Exception.class, () -> {
+            service.login(new LoginRequest(user.username(), user.password()));
+        });
+    }
+
+    @Test
+    void register() throws Exception {
+        var service = newService();
+        var authData = service.register(user);
+        assertNotNull(authData);
+        assertEquals(user.username(), authData.username());
+        assertFalse(authData.authToken().isEmpty());
+    }
+
+    @Test
+    void registerInvalidUsername() throws Exception {
+        var service = newService();
+
+//        Try a field as null
+        var user = new UserData(null, "myPassword", "jj@j.com");
+        assertThrows(InvalidAuthException.class, () -> {
+            service.register(user);
+        });
+
+//        Try a field as empty string
+        var user2 = new UserData("Joe", "", "jj@j.com");
+        assertThrows(InvalidAuthException.class, () -> {
+            service.register(user2);
+        });
+
+//        Try registering the same user twice
+        var user3 = new UserData("Joe", "myPassword", "jj@j.com");
+        var user4 = new UserData("Joe", "myPassword", "jj@j.com");
+        service.register(user3);
+        assertThrows(UsernameTakenException.class, () -> {
+            service.register(user4);
+        });
+    }
+
+}
