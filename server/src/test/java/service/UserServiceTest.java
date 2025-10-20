@@ -107,6 +107,7 @@ class UserServiceTest {
         var service = newService();
         service.register(user);
         var authData = service.login(new LoginRequest(user.username(), user.password()));
+
         assertThrows(InvalidAuthException.class, () -> {
             service.logout("");
         });
@@ -115,6 +116,25 @@ class UserServiceTest {
         });
         assertThrows(InvalidAuthException.class, () -> {
             service.logout("xyz");
+        });
+    }
+
+    @Test
+    void listGames() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+        var games = service.listGames(authData.authToken());
+        assertTrue(games.isEmpty());
+    }
+
+    @Test
+    void listGamesInvalid() throws Exception {
+        var service = newService();
+        service.register(user);
+        service.login(new LoginRequest(user.username(), user.password()));
+        assertThrows(InvalidAuthException.class, () -> {
+            service.listGames("Hello there");
         });
     }
 

@@ -2,6 +2,7 @@ package dataaccess;
 
 import chess.*;
 
+import java.util.HashSet;
 import java.util.List;
 
 public interface DataAccess {
@@ -11,11 +12,11 @@ public interface DataAccess {
 
     UserData getUser(String username);
 
-    void createGame(int ID);
+    void createGame(GameData gameData);
 
     void getGame();
 
-    List<String> listGames();
+    HashSet<GameData> listGames();
 
     void updateGame();
 

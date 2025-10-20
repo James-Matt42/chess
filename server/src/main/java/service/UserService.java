@@ -4,6 +4,8 @@ import chess.*;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 
 public class UserService {
@@ -67,6 +69,21 @@ public class UserService {
 
         dataAccess.deleteAuth(authData.authToken());
     }
+
+    public HashSet<GameData> listGames(String authToken) {
+        if (authToken == null || authToken.isBlank()) {
+            throw new InvalidAuthException("unauthorized");
+        }
+
+        var authData = dataAccess.getAuth(authToken);
+
+        if (authData == null) {
+            throw new InvalidAuthException("unauthorized");
+        }
+
+        return dataAccess.listGames();
+    }
+
 
     public static String generateAuthToken() {
         return UUID.randomUUID().toString();

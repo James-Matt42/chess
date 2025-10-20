@@ -1,14 +1,17 @@
 package dataaccess;
 
 import chess.AuthData;
+import chess.GameData;
 import chess.UserData;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
     private final HashMap<String, UserData> users = new HashMap<>();
     private final HashMap<String, AuthData> authTokens = new HashMap<>();
+    private final HashSet<GameData> games = new HashSet<>();
 
     @Override
     public void clear() {
@@ -21,8 +24,8 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public void createGame(int ID) {
-
+    public void createGame(GameData gameData) {
+        games.add(gameData);
     }
 
     @Override
@@ -37,8 +40,8 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public List<String> listGames() {
-        return List.of();
+    public HashSet<GameData> listGames() {
+        return games;
     }
 
     @Override
