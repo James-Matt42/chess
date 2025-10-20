@@ -4,6 +4,7 @@ import chess.AuthData;
 import chess.LoginRequest;
 import chess.UserData;
 import dataaccess.MemoryDataAccess;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -90,6 +91,30 @@ class UserServiceTest {
         });
         assertThrows(InvalidAuthException.class, () -> {
             service.login(new LoginRequest("Bob", user.password()));
+        });
+    }
+
+    @Test
+    void logout() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+        service.logout(authData.authToken());
+    }
+
+    @Test
+    void logoutInvalid() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+        assertThrows(InvalidAuthException.class, () -> {
+            service.logout("");
+        });
+        assertThrows(InvalidAuthException.class, () -> {
+            service.logout(null);
+        });
+        assertThrows(InvalidAuthException.class, () -> {
+            service.logout("xyz");
         });
     }
 

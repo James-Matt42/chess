@@ -48,13 +48,24 @@ public class UserService {
         if (!userData.password().equals(loginRequest.password())) {
             throw new InvalidAuthException("unauthorized");
         }
+
         var authData = new AuthData(generateAuthToken(), loginRequest.username());
         dataAccess.createAuth(authData);
         return authData;
     }
 
     public void logout(String authToken) {
+        if (authToken == null || authToken.isBlank()) {
+            throw new InvalidAuthException("unauthorized");
+        }
 
+        var authData = dataAccess.getAuth(authToken);
+
+        if (authData == null) {
+            throw new InvalidAuthException("unauthorized");
+        }
+
+        dataAccess.deleteAuth(authData.authToken());
     }
 
     public static String generateAuthToken() {
