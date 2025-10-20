@@ -1,7 +1,6 @@
 package dataaccess;
 
 import chess.AuthData;
-import chess.UserAuth;
 import chess.UserData;
 
 import java.util.HashMap;
@@ -9,6 +8,7 @@ import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
     private final HashMap<String, UserData> users = new HashMap<>();
+    private final HashMap<String, AuthData> authTokens = new HashMap<>();
 
     @Override
     public void clear() {
@@ -48,16 +48,16 @@ public class MemoryDataAccess implements DataAccess {
 
     @Override
     public void createAuth(AuthData authData) {
-
+        authTokens.put(authData.authToken(), authData);
     }
 
     @Override
-    public UserAuth getAuth(AuthData authData) {
-        return null;
+    public AuthData getAuth(String authToken) {
+        return authTokens.get(authToken);
     }
 
     @Override
-    public void deleteAuth() {
-
+    public void deleteAuth(String authToken) {
+        authTokens.remove(authToken);
     }
 }

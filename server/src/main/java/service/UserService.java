@@ -18,14 +18,14 @@ public class UserService {
     }
 
     public AuthData register(UserData user) throws Exception {
-        if (dataAccess.getUser(user.username()) != null) {
-            throw new UsernameTakenException("already taken");
-        }
         if (user.username() == null || user.password() == null || user.email() == null) {
-            throw new InvalidAuthException("bad request");
+            throw new BadRequestException("bad request");
         }
         if (user.username().isBlank() || user.password().isBlank() || user.email().isBlank()) {
-            throw new InvalidAuthException("bad request");
+            throw new BadRequestException("bad request");
+        }
+        if (dataAccess.getUser(user.username()) != null) {
+            throw new UsernameTakenException("already taken");
         }
 
         dataAccess.createUser(user);
@@ -33,15 +33,20 @@ public class UserService {
     }
 
     public AuthData login(LoginRequest loginRequest) throws Exception {
+        if (loginRequest.username() == null || loginRequest.password() == null) {
+            throw new BadRequestException("bad request");
+        }
+        if (loginRequest.username().isBlank() || loginRequest.password().isBlank()) {
+            throw new BadRequestException("bad request");
+        }
+
         var userData = dataAccess.getUser(loginRequest.username());
         if (userData == null) {
-//                User not found exception?
-            throw new Exception();
+            throw new InvalidAuthException("unauthorized");
         }
 //            Check provided password
         if (!userData.password().equals(loginRequest.password())) {
-//                Invalid password exception?
-            throw new Exception();
+            throw new InvalidAuthException("unauthorized");
         }
         var authData = new AuthData(generateAuthToken(), loginRequest.username());
         dataAccess.createAuth(authData);

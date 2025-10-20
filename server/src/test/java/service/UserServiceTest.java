@@ -37,18 +37,18 @@ class UserServiceTest {
     }
 
     @Test
-    void registerInvalidUsername() throws Exception {
+    void registerInvalid() throws Exception {
         var service = newService();
 
 //        Try a field as null
         var user = new UserData(null, "myPassword", "jj@j.com");
-        assertThrows(InvalidAuthException.class, () -> {
+        assertThrows(BadRequestException.class, () -> {
             service.register(user);
         });
 
 //        Try a field as empty string
         var user2 = new UserData("Joe", "", "jj@j.com");
-        assertThrows(InvalidAuthException.class, () -> {
+        assertThrows(BadRequestException.class, () -> {
             service.register(user2);
         });
 
@@ -58,6 +58,38 @@ class UserServiceTest {
         service.register(user3);
         assertThrows(UsernameTakenException.class, () -> {
             service.register(user4);
+        });
+    }
+
+    @Test
+    void login() throws Exception {
+        var service = newService();
+        service.register(user);
+        AuthData authData = service.login(new LoginRequest(user.username(), user.password()));
+        assertNotNull(authData);
+        assertEquals(user.username(), authData.username());
+        assertFalse(authData.authToken().isEmpty());
+    }
+
+    @Test
+    void loginInvalid() throws Exception {
+        var service = newService();
+        service.register(user);
+
+//        Not valid username or password
+        assertThrows(BadRequestException.class, () -> {
+            service.login(new LoginRequest(null, user.password()));
+        });
+        assertThrows(BadRequestException.class, () -> {
+            service.login(new LoginRequest("", user.password()));
+        });
+
+//        Incorrect username or password
+        assertThrows(InvalidAuthException.class, () -> {
+            service.login(new LoginRequest(user.username(), "Hello there"));
+        });
+        assertThrows(InvalidAuthException.class, () -> {
+            service.login(new LoginRequest("Bob", user.password()));
         });
     }
 
