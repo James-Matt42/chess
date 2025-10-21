@@ -143,7 +143,7 @@ class UserServiceTest {
 
         var gameName = "MyNewGame";
         var gameID = service.createGame(authData.authToken(), gameName);
-        var sameGame = new GameData(gameID, "", "", gameName, new ChessGame());
+        var sameGame = new ReturnGameData(gameID, null, null, gameName);
 
         var games = service.listGames(authData.authToken());
 

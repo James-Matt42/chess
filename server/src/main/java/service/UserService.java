@@ -5,6 +5,7 @@ import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 
 public class UserService {
@@ -63,9 +64,15 @@ public class UserService {
         dataAccess.deleteAuth(authData.authToken());
     }
 
-    public HashSet<GameData> listGames(String authToken) throws InvalidAuthException, DataAccessException {
+    public HashSet<ReturnGameData> listGames(String authToken) throws InvalidAuthException, DataAccessException {
         verifyAuth(authToken);
-        return dataAccess.listGames();
+        var games = dataAccess.listGames();
+        var newGames = new HashSet<ReturnGameData>();
+        for (var game : games) {
+            var newGame = new ReturnGameData(game.gameID(), game.whiteUsername(), game.blackUsername(), game.gameName());
+            newGames.add(newGame);
+        }
+        return newGames;
     }
 
     public int createGame(String authToken, String gameName) throws BadRequestException, InvalidAuthException, DataAccessException {
@@ -75,7 +82,7 @@ public class UserService {
 
         verifyAuth(authToken);
         this.gameID++;
-        var game = new GameData(gameID, "", "", gameName, new ChessGame());
+        var game = new GameData(gameID, null, null, gameName, new ChessGame());
         dataAccess.createGame(game);
         return gameID;
     }
@@ -89,14 +96,14 @@ public class UserService {
         }
 
         if (playerColor.equals("WHITE")) {
-            if (gameData.whiteUsername().isEmpty()) {
+            if (gameData.whiteUsername() == null || gameData.whiteUsername().isEmpty()) {
                 var newGameData = new GameData(gameData.gameID(), authData.username(), gameData.blackUsername(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);
             } else {
                 throw new AlreadyTakenException("already taken");
             }
         } else if (playerColor.equals("BLACK")) {
-            if (gameData.blackUsername().isEmpty()) {
+            if (gameData.blackUsername() == null || gameData.blackUsername().isEmpty()) {
                 var newGameData = new GameData(gameData.gameID(), gameData.whiteUsername(), authData.username(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);
             } else {

@@ -1,6 +1,7 @@
 package server;
 
 import chess.LoginRequest;
+import chess.ReturnGameData;
 import chess.UserData;
 import com.google.gson.Gson;
 import dataaccess.MemoryDataAccess;
@@ -118,8 +119,25 @@ public class Server {
         }
     }
 
-    private void listGames(Context context) {
+    private void listGames(Context ctx) {
+        try {
+            var serializer = new Gson();
+            String requestJson = ctx.header("authorization");
+            var authToken = serializer.fromJson(requestJson, String.class);
 
+            var games = userService.listGames(authToken);
+
+            var response = new HashMap<String, HashSet<chess.ReturnGameData>>();
+            response.put("games", games);
+
+            var result = serializer.toJson(response);
+            ctx.status(200).result(result);
+
+        } catch (InvalidAuthException e) {
+            ctx.status(401).result(getMessage(e));
+        } catch (Exception e) {
+            ctx.status(500).result(getMessage(e));
+        }
     }
 
     private void createGame(Context ctx) {
@@ -146,8 +164,27 @@ public class Server {
         }
     }
 
-    private void joinGame(Context context) {
+    private void joinGame(Context ctx) {
+        try {
+            var serializer = new Gson();
 
+            String authHeader = ctx.header("authorization");
+            String requestJson = ctx.body();
+
+            var authToken = serializer.fromJson(authHeader, String.class);
+            String playerColor = (String) serializer.fromJson(requestJson, Map.class).get("playerColor");
+            var gameID = (int) (double) serializer.fromJson(requestJson, Map.class).get("gameID");
+
+            userService.joinGame(authToken, playerColor, gameID);
+            ctx.status(200).result("{}");
+
+        } catch (BadRequestException e) {
+            ctx.status(400).result(getMessage(e));
+        } catch (InvalidAuthException e) {
+            ctx.status(401).result(getMessage(e));
+        } catch (Exception e) {
+            ctx.status(500).result(getMessage(e));
+        }
     }
 
     private String getMessage(Exception ex) {

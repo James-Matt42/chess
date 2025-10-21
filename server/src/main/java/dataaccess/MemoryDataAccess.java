@@ -17,6 +17,8 @@ public class MemoryDataAccess implements DataAccess {
     public void clear() throws DataAccessException {
         try {
             users.clear();
+            authTokens.clear();
+            games.clear();
         } catch (Exception e) {
             throw new DataAccessException(e.getMessage());
         }
