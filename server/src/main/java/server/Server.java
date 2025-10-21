@@ -1,11 +1,15 @@
 package server;
 
+import chess.LoginRequest;
 import chess.UserData;
 import com.google.gson.Gson;
 import dataaccess.MemoryDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
 import org.jetbrains.annotations.NotNull;
+import service.AlreadyTakenException;
+import service.BadRequestException;
+import service.InvalidAuthException;
 import service.UserService;
 
 import java.util.Map;
@@ -33,7 +37,6 @@ public class Server {
         server.post("game", this::createGame);
 //        Join a game
         server.put("game", this::joinGame);
-
     }
 
     public int run(int desiredPort) {
@@ -67,16 +70,33 @@ public class Server {
 
 //        call to service and register
             var authData = userService.register(user);
-
             ctx.result(serializer.toJson(authData));
-        } catch (Exception ex) {
-            var msg = String.format("{ \"message\": \"Error: %s\" }", ex.getMessage());
-            ctx.status(403).result(msg);
+
+        } catch (BadRequestException e) {
+            ctx.status(400).result(getMessage(e));
+        } catch (AlreadyTakenException e) {
+            ctx.status(403).result(getMessage(e));
+        } catch (Exception e) {
+            ctx.status(500).result(getMessage(e));
         }
     }
 
     private void login(Context ctx) {
+        try {
+            var serializer = new Gson();
+            String requestJson = ctx.body();
+            var loginRequest = serializer.fromJson(requestJson, LoginRequest.class);
 
+            var authData = userService.login(loginRequest);
+            ctx.result(serializer.toJson(authData));
+
+        } catch (BadRequestException e) {
+            ctx.status(400).result(getMessage(e));
+        } catch (InvalidAuthException e) {
+            ctx.status(401).result(getMessage(e));
+        } catch (Exception e) {
+            ctx.status(500).result(getMessage(e));
+        }
     }
 
     private void logout(Context context) {
@@ -93,5 +113,9 @@ public class Server {
 
     private void joinGame(Context context) {
 
+    }
+
+    private String getMessage(Exception ex) {
+        return String.format("{ \"message\": \"Error: %s\" }", ex.getMessage());
     }
 }

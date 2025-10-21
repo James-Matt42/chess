@@ -15,51 +15,91 @@ public class MemoryDataAccess implements DataAccess {
 
     @Override
     public void clear() throws DataAccessException {
-        users.clear();
+        try {
+            users.clear();
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        return users.get(username);
+        try {
+            return users.get(username);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public void createGame(GameData gameData) throws DataAccessException {
-        games.put(gameData.gameID(), gameData);
+        try {
+            games.put(gameData.gameID(), gameData);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        users.put(user.username(), user);
+        try {
+            users.put(user.username(), user);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
-        return games.get(gameID);
+        try {
+            return games.get(gameID);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public HashSet<GameData> listGames() throws DataAccessException {
-        return new HashSet<>(games.values());
+        try {
+            return new HashSet<>(games.values());
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public void updateGame(int gameID, GameData gameData) throws DataAccessException {
-        games.replace(gameID, gameData);
+        try {
+            games.replace(gameID, gameData);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public void createAuth(AuthData authData) throws DataAccessException {
-        authTokens.put(authData.authToken(), authData);
+        try {
+            authTokens.put(authData.authToken(), authData);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        return authTokens.get(authToken);
+        try {
+            return authTokens.get(authToken);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-        authTokens.remove(authToken);
+        try {
+            authTokens.remove(authToken);
+        } catch (Exception e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 }
