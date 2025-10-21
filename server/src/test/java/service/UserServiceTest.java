@@ -2,7 +2,6 @@ package service;
 
 import chess.*;
 import dataaccess.MemoryDataAccess;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,7 +54,7 @@ class UserServiceTest {
         var user3 = new UserData("Joe", "myPassword", "jj@j.com");
         var user4 = new UserData("Joe", "myPassword", "jj@j.com");
         service.register(user3);
-        assertThrows(UsernameTakenException.class, () -> {
+        assertThrows(AlreadyTakenException.class, () -> {
             service.register(user4);
         });
     }
@@ -169,6 +168,61 @@ class UserServiceTest {
         });
         assertThrows(InvalidAuthException.class, () -> {
             service.createGame("xyz", gameName);
+        });
+    }
+
+    @Test
+    void joinGame() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+
+        var user2 = new UserData("Bob", "goodPassword", "bob@builder.com");
+        service.register(user2);
+        var authData2 = service.login(new LoginRequest(user2.username(), user2.password()));
+
+        var gameName = "MyNewGame";
+        var gameID = service.createGame(authData.authToken(), gameName);
+
+        service.joinGame(authData.authToken(), "WHITE", gameID);
+        service.joinGame(authData2.authToken(), "BLACK", gameID);
+    }
+
+    @Test
+    void joinGameInvalid() throws Exception {
+        var service = newService();
+        service.register(user);
+        var authData = service.login(new LoginRequest(user.username(), user.password()));
+
+        var user2 = new UserData("Bob", "goodPassword", "bob@builder.com");
+        service.register(user2);
+        var authData2 = service.login(new LoginRequest(user2.username(), user2.password()));
+
+        var user3 = new UserData("Bill", "anotherPassword4Me", "Gates@money.com");
+        service.register(user3);
+        var authData3 = service.login(new LoginRequest(user3.username(), user3.password()));
+
+        var gameName = "MyNewGame";
+        var gameID = service.createGame(authData.authToken(), gameName);
+
+        assertThrows(InvalidAuthException.class, () -> {
+            service.joinGame("Hey there", "WHITE", gameID);
+        });
+        assertThrows(BadRequestException.class, () -> {
+            service.joinGame(authData.authToken(), "BEIGE", gameID);
+        });
+        assertThrows(BadRequestException.class, () -> {
+            service.joinGame(authData.authToken(), "WHITE", gameID + 42);
+        });
+
+        service.joinGame(authData.authToken(), "WHITE", gameID);
+        assertThrows(AlreadyTakenException.class, () -> {
+            service.joinGame(authData3.authToken(), "WHITE", gameID);
+        });
+
+        service.joinGame(authData2.authToken(), "BLACK", gameID);
+        assertThrows(AlreadyTakenException.class, () -> {
+            service.joinGame(authData3.authToken(), "BLACK", gameID);
         });
     }
 }

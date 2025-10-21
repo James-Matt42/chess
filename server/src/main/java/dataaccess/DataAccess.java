@@ -6,23 +6,23 @@ import java.util.HashSet;
 import java.util.List;
 
 public interface DataAccess {
-    void clear();
+    void clear() throws DataAccessException;
 
-    void createUser(UserData user);
+    void createUser(UserData user) throws DataAccessException;
 
-    UserData getUser(String username);
+    UserData getUser(String username) throws DataAccessException;
 
-    void createGame(GameData gameData);
+    void createGame(GameData gameData) throws DataAccessException;
 
-    void getGame();
+    GameData getGame(int gameID) throws DataAccessException;
 
-    HashSet<GameData> listGames();
+    HashSet<GameData> listGames() throws DataAccessException;
 
-    void updateGame();
+    void updateGame(int gameID, GameData gameData) throws DataAccessException;
 
-    void createAuth(AuthData authData);
+    void createAuth(AuthData authData) throws DataAccessException;
 
-    AuthData getAuth(String authToken);
+    AuthData getAuth(String authToken) throws DataAccessException;
 
-    void deleteAuth(String authToken);
+    void deleteAuth(String authToken) throws DataAccessException;
 }

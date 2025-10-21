@@ -12,7 +12,7 @@ class DataAccessTest {
     }
 
     @Test
-    void createUser() {
+    void createUser() throws DataAccessException {
         MemoryDataAccess db = new MemoryDataAccess();
         var user = new UserData("Joe", "jj@j.com", "myPassword");
         db.createUser(user);
@@ -20,7 +20,7 @@ class DataAccessTest {
     }
 
     @Test
-    void clear() {
+    void clear() throws DataAccessException {
         MemoryDataAccess db = new MemoryDataAccess();
         var user = new UserData("Joe", "jj@j.com", "myPassword");
         db.createUser(user);
