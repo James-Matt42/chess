@@ -12,6 +12,9 @@ import service.BadRequestException;
 import service.InvalidAuthException;
 import service.UserService;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 public class Server {
@@ -119,8 +122,28 @@ public class Server {
 
     }
 
-    private void createGame(Context context) {
+    private void createGame(Context ctx) {
+        try {
+            var serializer = new Gson();
 
+            String authHeader = ctx.header("authorization");
+            String requestJson = ctx.body();
+
+            var authToken = serializer.fromJson(authHeader, String.class);
+            String gameName = (String) serializer.fromJson(requestJson, Map.class).get("gameName");
+
+            var gameID = userService.createGame(authToken, gameName);
+            var response = new HashMap<String, Integer>();
+            response.put("gameID", gameID);
+            ctx.status(200).result(serializer.toJson(response));
+
+        } catch (BadRequestException e) {
+            ctx.status(400).result(getMessage(e));
+        } catch (InvalidAuthException e) {
+            ctx.status(401).result(getMessage(e));
+        } catch (Exception e) {
+            ctx.status(500).result(getMessage(e));
+        }
     }
 
     private void joinGame(Context context) {
