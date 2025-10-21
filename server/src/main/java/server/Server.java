@@ -70,7 +70,7 @@ public class Server {
 
 //        call to service and register
             var authData = userService.register(user);
-            ctx.result(serializer.toJson(authData));
+            ctx.status(200).result(serializer.toJson(authData));
 
         } catch (BadRequestException e) {
             ctx.status(400).result(getMessage(e));
@@ -88,7 +88,7 @@ public class Server {
             var loginRequest = serializer.fromJson(requestJson, LoginRequest.class);
 
             var authData = userService.login(loginRequest);
-            ctx.result(serializer.toJson(authData));
+            ctx.status(200).result(serializer.toJson(authData));
 
         } catch (BadRequestException e) {
             ctx.status(400).result(getMessage(e));
@@ -99,8 +99,20 @@ public class Server {
         }
     }
 
-    private void logout(Context context) {
+    private void logout(Context ctx) {
+        try {
+            var serializer = new Gson();
+            String requestJson = ctx.header("authorization");
+            var authToken = serializer.fromJson(requestJson, String.class);
 
+            userService.logout(authToken);
+            ctx.status(200).result("{}");
+
+        } catch (InvalidAuthException e) {
+            ctx.status(401).result(getMessage(e));
+        } catch (Exception e) {
+            ctx.status(500).result(getMessage(e));
+        }
     }
 
     private void listGames(Context context) {

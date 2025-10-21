@@ -31,7 +31,9 @@ public class UserService {
         }
 
         dataAccess.createUser(user);
-        return new AuthData(generateAuthToken(), user.username());
+        var authData = new AuthData(generateAuthToken(), user.username());
+        dataAccess.createAuth(authData);
+        return authData;
     }
 
     public AuthData login(LoginRequest loginRequest) throws Exception {
