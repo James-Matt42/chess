@@ -6,7 +6,6 @@ import chess.UserData;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 public class MemoryDataAccess implements DataAccess {
     private final HashMap<String, UserData> users = new HashMap<>();

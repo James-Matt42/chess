@@ -3,7 +3,6 @@ package dataaccess;
 import chess.*;
 
 import java.util.HashSet;
-import java.util.List;
 
 public interface DataAccess {
     void clear() throws DataAccessException;

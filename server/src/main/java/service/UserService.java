@@ -5,7 +5,6 @@ import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.UUID;
 
 public class UserService {
@@ -49,7 +48,6 @@ public class UserService {
         if (userData == null) {
             throw new InvalidAuthException("unauthorized");
         }
-//            Check provided password
         if (!userData.password().equals(loginRequest.password())) {
             throw new InvalidAuthException("unauthorized");
         }

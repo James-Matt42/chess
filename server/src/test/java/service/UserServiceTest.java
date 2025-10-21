@@ -20,9 +20,7 @@ class UserServiceTest {
         var service = newService();
         service.register(user);
         service.clear();
-        assertThrows(Exception.class, () -> {
-            service.login(new LoginRequest(user.username(), user.password()));
-        });
+        assertThrows(Exception.class, () -> service.login(new LoginRequest(user.username(), user.password())));
     }
 
     @Test
@@ -40,23 +38,17 @@ class UserServiceTest {
 
 //        Try a field as null
         var user = new UserData(null, "myPassword", "jj@j.com");
-        assertThrows(BadRequestException.class, () -> {
-            service.register(user);
-        });
+        assertThrows(BadRequestException.class, () -> service.register(user));
 
 //        Try a field as empty string
         var user2 = new UserData("Joe", "", "jj@j.com");
-        assertThrows(BadRequestException.class, () -> {
-            service.register(user2);
-        });
+        assertThrows(BadRequestException.class, () -> service.register(user2));
 
 //        Try registering the same user twice
         var user3 = new UserData("Joe", "myPassword", "jj@j.com");
         var user4 = new UserData("Joe", "myPassword", "jj@j.com");
         service.register(user3);
-        assertThrows(AlreadyTakenException.class, () -> {
-            service.register(user4);
-        });
+        assertThrows(AlreadyTakenException.class, () -> service.register(user4));
     }
 
     @Test
@@ -75,20 +67,12 @@ class UserServiceTest {
         service.register(user);
 
 //        Not valid username or password
-        assertThrows(BadRequestException.class, () -> {
-            service.login(new LoginRequest(null, user.password()));
-        });
-        assertThrows(BadRequestException.class, () -> {
-            service.login(new LoginRequest("", user.password()));
-        });
+        assertThrows(BadRequestException.class, () -> service.login(new LoginRequest(null, user.password())));
+        assertThrows(BadRequestException.class, () -> service.login(new LoginRequest("", user.password())));
 
 //        Incorrect username or password
-        assertThrows(InvalidAuthException.class, () -> {
-            service.login(new LoginRequest(user.username(), "Hello there"));
-        });
-        assertThrows(InvalidAuthException.class, () -> {
-            service.login(new LoginRequest("Bob", user.password()));
-        });
+        assertThrows(InvalidAuthException.class, () -> service.login(new LoginRequest(user.username(), "Hello there")));
+        assertThrows(InvalidAuthException.class, () -> service.login(new LoginRequest("Bob", user.password())));
     }
 
     @Test
@@ -103,17 +87,11 @@ class UserServiceTest {
     void logoutInvalid() throws Exception {
         var service = newService();
         service.register(user);
-        var authData = service.login(new LoginRequest(user.username(), user.password()));
+        service.login(new LoginRequest(user.username(), user.password()));
 
-        assertThrows(InvalidAuthException.class, () -> {
-            service.logout("");
-        });
-        assertThrows(InvalidAuthException.class, () -> {
-            service.logout(null);
-        });
-        assertThrows(InvalidAuthException.class, () -> {
-            service.logout("xyz");
-        });
+        assertThrows(InvalidAuthException.class, () -> service.logout(""));
+        assertThrows(InvalidAuthException.class, () -> service.logout(null));
+        assertThrows(InvalidAuthException.class, () -> service.logout("xyz"));
     }
 
     @Test
@@ -130,9 +108,7 @@ class UserServiceTest {
         var service = newService();
         service.register(user);
         service.login(new LoginRequest(user.username(), user.password()));
-        assertThrows(InvalidAuthException.class, () -> {
-            service.listGames("Hello there");
-        });
+        assertThrows(InvalidAuthException.class, () -> service.listGames("Hello there"));
     }
 
     @Test
@@ -157,18 +133,10 @@ class UserServiceTest {
         var authData = service.login(new LoginRequest(user.username(), user.password()));
 
         var gameName = "MyNewGame";
-        var gameID = service.createGame(authData.authToken(), gameName);
-        var sameGame = new GameData(gameID, "", "", gameName, new ChessGame());
 
-        assertThrows(BadRequestException.class, () -> {
-            service.createGame(authData.authToken(), null);
-        });
-        assertThrows(BadRequestException.class, () -> {
-            service.createGame(authData.authToken(), "");
-        });
-        assertThrows(InvalidAuthException.class, () -> {
-            service.createGame("xyz", gameName);
-        });
+        assertThrows(BadRequestException.class, () -> service.createGame(authData.authToken(), null));
+        assertThrows(BadRequestException.class, () -> service.createGame(authData.authToken(), ""));
+        assertThrows(InvalidAuthException.class, () -> service.createGame("xyz", gameName));
     }
 
     @Test
@@ -205,24 +173,14 @@ class UserServiceTest {
         var gameName = "MyNewGame";
         var gameID = service.createGame(authData.authToken(), gameName);
 
-        assertThrows(InvalidAuthException.class, () -> {
-            service.joinGame("Hey there", "WHITE", gameID);
-        });
-        assertThrows(BadRequestException.class, () -> {
-            service.joinGame(authData.authToken(), "BEIGE", gameID);
-        });
-        assertThrows(BadRequestException.class, () -> {
-            service.joinGame(authData.authToken(), "WHITE", gameID + 42);
-        });
+        assertThrows(InvalidAuthException.class, () -> service.joinGame("Hey there", "WHITE", gameID));
+        assertThrows(BadRequestException.class, () -> service.joinGame(authData.authToken(), "BEIGE", gameID));
+        assertThrows(BadRequestException.class, () -> service.joinGame(authData.authToken(), "WHITE", gameID + 42));
 
         service.joinGame(authData.authToken(), "WHITE", gameID);
-        assertThrows(AlreadyTakenException.class, () -> {
-            service.joinGame(authData3.authToken(), "WHITE", gameID);
-        });
+        assertThrows(AlreadyTakenException.class, () -> service.joinGame(authData3.authToken(), "WHITE", gameID));
 
         service.joinGame(authData2.authToken(), "BLACK", gameID);
-        assertThrows(AlreadyTakenException.class, () -> {
-            service.joinGame(authData3.authToken(), "BLACK", gameID);
-        });
+        assertThrows(AlreadyTakenException.class, () -> service.joinGame(authData3.authToken(), "BLACK", gameID));
     }
 }

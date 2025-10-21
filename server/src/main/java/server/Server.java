@@ -1,14 +1,12 @@
 package server;
 
 import chess.LoginRequest;
-import chess.ReturnGameData;
 import chess.UserData;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dataaccess.MemoryDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
-import org.jetbrains.annotations.NotNull;
 import service.AlreadyTakenException;
 import service.BadRequestException;
 import service.InvalidAuthException;
@@ -16,7 +14,6 @@ import service.UserService;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 public class Server {
@@ -73,7 +70,6 @@ public class Server {
             String requestJson = ctx.body();
             var user = serializer.fromJson(requestJson, UserData.class);
 
-//        call to service and register
             var authData = userService.register(user);
             ctx.status(200).result(serializer.toJson(authData));
 
@@ -172,19 +168,19 @@ public class Server {
             String authHeader = ctx.header("authorization");
             String requestJson = ctx.body();
 
-            String authToken = null;
+            String authToken;
             try {
                 authToken = serializer.fromJson(authHeader, String.class);
             } catch (JsonSyntaxException e) {
                 throw new InvalidAuthException("unauthorized");
             }
-            String playerColor = null;
+            String playerColor;
             try {
                 playerColor = (String) serializer.fromJson(requestJson, Map.class).get("playerColor");
             } catch (Exception e) {
                 throw new RuntimeException("bad request");
             }
-            int gameID = 0;
+            int gameID;
             try {
                 gameID = (int) (double) serializer.fromJson(requestJson, Map.class).get("gameID");
             } catch (Exception e) {
