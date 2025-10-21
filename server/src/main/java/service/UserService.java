@@ -95,7 +95,9 @@ public class UserService {
             throw new BadRequestException("bad request");
         }
 
-        if (playerColor.equals("WHITE")) {
+        if (playerColor == null) {
+            throw new BadRequestException("bad request");
+        } else if (playerColor.equals("WHITE")) {
             if (gameData.whiteUsername() == null || gameData.whiteUsername().isEmpty()) {
                 var newGameData = new GameData(gameData.gameID(), authData.username(), gameData.blackUsername(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);

@@ -4,6 +4,7 @@ import chess.LoginRequest;
 import chess.ReturnGameData;
 import chess.UserData;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import dataaccess.MemoryDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
@@ -171,18 +172,36 @@ public class Server {
             String authHeader = ctx.header("authorization");
             String requestJson = ctx.body();
 
-            var authToken = serializer.fromJson(authHeader, String.class);
-            String playerColor = (String) serializer.fromJson(requestJson, Map.class).get("playerColor");
-            var gameID = (int) (double) serializer.fromJson(requestJson, Map.class).get("gameID");
+            String authToken = null;
+            try {
+                authToken = serializer.fromJson(authHeader, String.class);
+            } catch (JsonSyntaxException e) {
+                throw new InvalidAuthException("unauthorized");
+            }
+            String playerColor = null;
+            try {
+                playerColor = (String) serializer.fromJson(requestJson, Map.class).get("playerColor");
+            } catch (Exception e) {
+                throw new RuntimeException("bad request");
+            }
+            int gameID = 0;
+            try {
+                gameID = (int) (double) serializer.fromJson(requestJson, Map.class).get("gameID");
+            } catch (Exception e) {
+                throw new BadRequestException("bad request");
+            }
 
             userService.joinGame(authToken, playerColor, gameID);
             ctx.status(200).result("{}");
 
         } catch (BadRequestException e) {
             ctx.status(400).result(getMessage(e));
+        } catch (AlreadyTakenException e) {
+            ctx.status(403).result(getMessage(e));
         } catch (InvalidAuthException e) {
             ctx.status(401).result(getMessage(e));
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             ctx.status(500).result(getMessage(e));
         }
     }
