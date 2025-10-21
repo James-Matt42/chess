@@ -85,19 +85,7 @@ public class ChessBoard {
                 if (piece == null) {
                     boardString.append(" |");
                 } else {
-                    String pieceString;
-                    switch (piece.getPieceType()) {
-                        case KING -> pieceString = "k";
-                        case QUEEN -> pieceString = "q";
-                        case BISHOP -> pieceString = "b";
-                        case KNIGHT -> pieceString = "n";
-                        case ROOK -> pieceString = "r";
-                        case PAWN -> pieceString = "p";
-                        default -> pieceString = " ";
-                    }
-                    if (piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
-                        pieceString = pieceString.toUpperCase();
-                    }
+                    String pieceString = getPieceString(piece);
                     boardString.append(pieceString).append("|");
                 }
             }
@@ -105,7 +93,23 @@ public class ChessBoard {
         }
         boardString.append("\n");
         return boardString.toString();
-//        System.out.print(boardString);
+    }
+
+    private static String getPieceString(ChessPiece piece) {
+        String pieceString;
+        switch (piece.getPieceType()) {
+            case KING -> pieceString = "k";
+            case QUEEN -> pieceString = "q";
+            case BISHOP -> pieceString = "b";
+            case KNIGHT -> pieceString = "n";
+            case ROOK -> pieceString = "r";
+            case PAWN -> pieceString = "p";
+            default -> pieceString = " ";
+        }
+        if (piece.getTeamColor() == ChessGame.TeamColor.WHITE) {
+            pieceString = pieceString.toUpperCase();
+        }
+        return pieceString;
     }
 
 
@@ -122,15 +126,6 @@ public class ChessBoard {
         }
 
         return newBoard;
-    }
-
-    public Collection<ChessPosition> getStartPositions(ChessGame.TeamColor color) {
-        var moves = getColorMoves(color);
-        var positions = new HashSet<ChessPosition>();
-        for (var move : moves) {
-            positions.add(move.getStartPosition());
-        }
-        return positions;
     }
 
     public Collection<ChessPosition> getEndPositions(ChessGame.TeamColor color) {

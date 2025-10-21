@@ -85,7 +85,8 @@ public class UserService {
         return gameID;
     }
 
-    public void joinGame(String authToken, String playerColor, int gameID) throws AlreadyTakenException, BadRequestException, InvalidAuthException, DataAccessException {
+    public void joinGame(String authToken, String playerColor, int gameID)
+            throws AlreadyTakenException, BadRequestException, InvalidAuthException, DataAccessException {
         var authData = verifyAuth(authToken);
         var gameData = dataAccess.getGame(gameID);
 
@@ -97,14 +98,16 @@ public class UserService {
             throw new BadRequestException("bad request");
         } else if (playerColor.equals("WHITE")) {
             if (gameData.whiteUsername() == null || gameData.whiteUsername().isEmpty()) {
-                var newGameData = new GameData(gameData.gameID(), authData.username(), gameData.blackUsername(), gameData.gameName(), gameData.game());
+                var newGameData = new GameData(gameData.gameID(), authData.username(),
+                        gameData.blackUsername(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);
             } else {
                 throw new AlreadyTakenException("already taken");
             }
         } else if (playerColor.equals("BLACK")) {
             if (gameData.blackUsername() == null || gameData.blackUsername().isEmpty()) {
-                var newGameData = new GameData(gameData.gameID(), gameData.whiteUsername(), authData.username(), gameData.gameName(), gameData.game());
+                var newGameData = new GameData(gameData.gameID(),
+                        gameData.whiteUsername(), authData.username(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);
             } else {
                 throw new AlreadyTakenException("already taken");

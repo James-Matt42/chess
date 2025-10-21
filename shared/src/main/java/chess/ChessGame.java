@@ -223,17 +223,16 @@ public class ChessGame {
             var rookPositionLeft = new ChessPosition(row, 1);
             var rookPositionRight = new ChessPosition(row, 8);
 
+
 //            Check if the king has moved
             if (!hasMovedFrom(kingPosition)) {
-//                Check if either rook has moved
+//                Check if the rooks have moved
                 if (!hasMovedFrom(rookPositionLeft) && !isNull(rookPositionLeft)) {
-//                    Make sure that king doesn't pass through check
-                    if (castleHelper(rookPositionLeft, kingPosition, teamColor, -1)) {
-//                        Make sure that there's no piece next to the rook
-                        if (board.getPiece(new ChessPosition(rookPositionLeft.getRow(), rookPositionLeft.getColumn() + 1)) == null) {
-                            var endPos = new ChessPosition(kingPosition.getRow(), kingPosition.getColumn() - 2);
-                            castleMoves.add(new ChessMove(kingPosition, endPos, null));
-                        }
+//                    Make sure that king doesn't pass through check and that there's no piece next to the rook
+                    if (castleHelper(rookPositionLeft, kingPosition, teamColor, -1)
+                            && board.getPiece(new ChessPosition(rookPositionLeft.getRow(), rookPositionLeft.getColumn() + 1)) == null) {
+                        var endPos = new ChessPosition(kingPosition.getRow(), kingPosition.getColumn() - 2);
+                        castleMoves.add(new ChessMove(kingPosition, endPos, null));
                     }
                 }
                 if (!hasMovedFrom(rookPositionRight) && !isNull(rookPositionRight)) {

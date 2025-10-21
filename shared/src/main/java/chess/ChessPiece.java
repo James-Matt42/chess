@@ -12,7 +12,7 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
-    private final int RECURSE_LIMIT;
+    private static int RECURSE_LIMIT;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
@@ -97,11 +97,17 @@ public class ChessPiece {
         return String.format("[%s:%s]", type.toString(), pieceColor.toString());
     }
 
-    private void addMove(ChessPosition start, int rowOffset, int colOffset, int numRepeats, ChessPiece piece, ChessBoard board, HashSet<ChessMove> moves) {
-        int rowOffset_copy = rowOffset;
-        int colOffset_copy = colOffset;
+    private void addMove(ChessPosition start,
+                         int rowOffset,
+                         int colOffset,
+                         int numRepeats,
+                         ChessPiece piece,
+                         ChessBoard board,
+                         HashSet<ChessMove> moves) {
+        int currRowOffset = rowOffset;
+        int currColOffset = colOffset;
         for (int i = 0; i < numRepeats; i++) {
-            ChessPosition pos = new ChessPosition(start.getRow() + rowOffset_copy, start.getColumn() + colOffset_copy);
+            ChessPosition pos = new ChessPosition(start.getRow() + currRowOffset, start.getColumn() + currColOffset);
             if (validPosition(pos)) {
                 if (board.getPiece(pos) == null) {
                     moves.add(new ChessMove(start, pos, null));
@@ -114,8 +120,8 @@ public class ChessPiece {
             } else {
                 return;
             }
-            rowOffset_copy += rowOffset;
-            colOffset_copy += colOffset;
+            currRowOffset += rowOffset;
+            currColOffset += colOffset;
         }
     }
 
@@ -185,11 +191,14 @@ public class ChessPiece {
         }
 
 //        Validate normal positions
-        for (int new_col = col - 1; new_col < col + 2; new_col++) {
-            var pos = new ChessPosition(row + rowOffset, new_col);
+        for (int newCol = col - 1; newCol < col + 2; newCol++) {
+            var pos = new ChessPosition(row + rowOffset, newCol);
 //            validateAndAdd(pos, board, piece, myPosition, moves);
-            if ((validPosition(pos) && new_col == col && board.getPiece(pos) == null) || (validPosition(pos) && new_col != col && board.getPiece(pos) != null && board.getPiece(pos).getTeamColor() != piece.getTeamColor())) {
-                if (piece.getTeamColor() == ChessGame.TeamColor.WHITE && row + rowOffset == 8 || piece.getTeamColor() == ChessGame.TeamColor.BLACK && row + rowOffset == 1) {
+            if ((validPosition(pos) && newCol == col && board.getPiece(pos) == null) ||
+                    (validPosition(pos) && newCol != col && board.getPiece(pos) != null &&
+                            board.getPiece(pos).getTeamColor() != piece.getTeamColor())) {
+                if (piece.getTeamColor() == ChessGame.TeamColor.WHITE && row + rowOffset == 8 ||
+                        piece.getTeamColor() == ChessGame.TeamColor.BLACK && row + rowOffset == 1) {
                     moves.add(new ChessMove(myPosition, pos, PieceType.QUEEN));
                     moves.add(new ChessMove(myPosition, pos, PieceType.BISHOP));
                     moves.add(new ChessMove(myPosition, pos, PieceType.ROOK));
