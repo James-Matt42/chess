@@ -5,6 +5,7 @@ import chess.UserData;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dataaccess.MemoryDataAccess;
+import dataaccess.SQLDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
 import service.AlreadyTakenException;
@@ -22,7 +23,7 @@ public class Server {
     private final UserService userService;
 
     public Server() {
-        this.userService = new UserService(new MemoryDataAccess());
+        this.userService = new UserService(new SQLDataAccess());
         server = Javalin.create(config -> config.staticFiles.add("web"));
 
 //        Clear database
