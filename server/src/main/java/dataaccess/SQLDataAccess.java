@@ -60,18 +60,15 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void clear() throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("drop database chess")) {
-                preparedStatement.execute();
-            }
-        } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
-        }
+        executeStatement("drop database chess");
     }
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-
+        var new_user = String.format("INSERT INTO users (username, password, email) " +
+                        "VALUES (\"%s\", \"%s\", \"%s\")",
+                user.username(), user.password(), user.email());
+        executeStatement(new String[]{"use chess", new_user});
     }
 
     @Override
