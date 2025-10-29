@@ -11,7 +11,7 @@ class DataAccessTest {
 
     @Test
     void clear() throws DataAccessException {
-        MemoryDataAccess db = new MemoryDataAccess();
+        SQLDataAccess db = new SQLDataAccess();
         db.createUser(user);
         db.clear();
         assertNull(db.getUser("Joe"));
@@ -19,14 +19,14 @@ class DataAccessTest {
 
     @Test
     void createUser() throws DataAccessException {
-        MemoryDataAccess db = new MemoryDataAccess();
+        SQLDataAccess db = new SQLDataAccess();
         db.createUser(user);
         assertEquals(user, db.getUser(user.username()));
     }
 
     @Test
     void getUser() throws DataAccessException {
-        MemoryDataAccess db = new MemoryDataAccess();
+        SQLDataAccess db = new SQLDataAccess();
         db.createUser(user);
         assertEquals(db.getUser(user.username()), user);
     }
