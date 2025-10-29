@@ -60,7 +60,9 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void clear() throws DataAccessException {
-        executeStatement("drop database chess");
+//        Deletes the tables and then remakes them so that the database and table structure always exists
+        executeStatement(new String[]{"drop table users", "drop table games"});
+        setup();
     }
 
     @Override
@@ -73,7 +75,21 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        return null;
+//        var rs = executeStatement(String.format("select * from users where username=\"%s\";", username));
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(String.format("select * from users where username=\"%s\";", username))) {
+                var rs = preparedStatement.executeQuery();
+                if (rs.next()) {
+                    System.out.println(rs.getInt(1));
+                    String password = rs.getString(3);
+                    String email = rs.getString(4);
+                    return new UserData(username, password, email);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override

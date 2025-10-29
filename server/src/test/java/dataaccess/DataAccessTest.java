@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DataAccessTest {
 
-    final UserData user = new UserData("Joe", "jj@j.com", "myPassword");
+    final UserData user = new UserData("Joe", "myPassword", "jj@j.com");
 
     @Test
     void clear() throws DataAccessException {
