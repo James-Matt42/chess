@@ -1,11 +1,7 @@
 package dataaccess;
 
-import chess.ChessGame;
-import chess.ChessMove;
-import chess.GameData;
-import chess.UserData;
+import chess.*;
 import org.junit.jupiter.api.Test;
-import service.BadRequestException;
 
 import java.util.HashSet;
 
@@ -153,5 +149,19 @@ class DataAccessTest {
 
 //        Try and make two copies of the same game through updateGame()
         assertThrows(DataAccessException.class, () -> db.updateGame(1, gameData2));
+    }
+
+    @Test
+    void createAuth() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+
+//        Shouldn't throw an error (we'll test for if it's persistent in the getAuth() test)
+        db.createAuth(new AuthData("12345", "Bob"));
+    }
+
+    @Test
+    void createAuthFails() throws DataAccessException {
+//        I don't know
     }
 }

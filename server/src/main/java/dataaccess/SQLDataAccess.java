@@ -7,7 +7,6 @@ import chess.UserData;
 import com.google.gson.Gson;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.HashSet;
 
 public class SQLDataAccess implements DataAccess {
@@ -207,7 +206,15 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void createAuth(AuthData authData) throws DataAccessException {
-
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement("UPDATE users SET authToken = ? WHERE username = ?")) {
+                preparedStatement.setString(1, authData.authToken());
+                preparedStatement.setString(2, authData.username());
+                preparedStatement.execute();
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
