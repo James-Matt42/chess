@@ -239,6 +239,7 @@ public class SQLDataAccess implements DataAccess {
         try (var conn = DatabaseManager.getConnection()) {
             try (var preparedStatement = conn.prepareStatement("UPDATE users SET authToken = NULL where authToken = ?")) {
                 preparedStatement.setString(1, authToken);
+                preparedStatement.execute();
             }
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());

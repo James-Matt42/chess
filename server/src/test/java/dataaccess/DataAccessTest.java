@@ -162,7 +162,10 @@ class DataAccessTest {
 
     @Test
     void createAuthFails() throws DataAccessException {
-//        I don't know
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+
+        assertThrows(Exception.class, () -> db.createAuth(null));
     }
 
     @Test
@@ -187,6 +190,36 @@ class DataAccessTest {
 
     @Test
     void deleteAuth() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        var user2 = new UserData("Jerry", "agoodpassword", "j@j.com");
+        db.createUser(user);
+        db.createUser(user2);
 
+//        Make sure it deletes all occurrences of the given authToken
+        var authData = new AuthData("12345", user.username());
+        var authData2 = new AuthData(authData.authToken(), user2.username());
+        db.createAuth(authData);
+        db.createAuth(authData2);
+
+        db.deleteAuth(authData.authToken());
+
+        assertNull(db.getAuth(authData.authToken()));
+    }
+
+    @Test
+    void deleteAuthFails() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        db.createUser(user);
+        var authData = new AuthData("12345", user.username());
+        db.createAuth(authData);
+
+//        Attempt something malicious
+        db.deleteAuth("*");
+        db.deleteAuth("%");
+        db.deleteAuth("x'; DROP DATABASE chess;");
+
+        assertEquals(authData, db.getAuth(authData.authToken()));
     }
 }
