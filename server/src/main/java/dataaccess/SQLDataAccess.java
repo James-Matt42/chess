@@ -219,11 +219,29 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        return null;
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement("SELECT * FROM users WHERE authToken=?")) {
+                preparedStatement.setString(1, authToken);
+                var rs = preparedStatement.executeQuery();
+                if (rs.next()) {
+                    String username = rs.getString(2);
+                    return new AuthData(authToken, username);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement("UPDATE users SET authToken = NULL where authToken = ?")) {
+                preparedStatement.setString(1, authToken);
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 }

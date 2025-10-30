@@ -164,4 +164,29 @@ class DataAccessTest {
     void createAuthFails() throws DataAccessException {
 //        I don't know
     }
+
+    @Test
+    void getAuth() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        db.createUser(user);
+        var authData = new AuthData("12345", user.username());
+        db.createAuth(authData);
+        assertEquals(authData, db.getAuth(authData.authToken()));
+    }
+
+    @Test
+    void getAuthFails() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        db.createUser(user);
+        var authData = new AuthData("12345", user.username() + "2.0");
+        db.createAuth(authData);
+        assertNull(db.getAuth(authData.authToken()));
+    }
+
+    @Test
+    void deleteAuth() throws DataAccessException {
+
+    }
 }
