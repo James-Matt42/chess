@@ -126,4 +126,32 @@ class DataAccessTest {
         var nada = db.listGames();
         assertEquals(new HashSet<GameData>(), nada);
     }
+
+    @Test
+    void updateGame() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        db.createGame(gameData);
+        GameData gameData2 = new GameData(2, null, "Bob", "MyGame2", new ChessGame());
+
+        db.updateGame(1, gameData2);
+
+        var games = db.listGames();
+        assertEquals(1, games.size());
+        assertTrue(games.contains(gameData2));
+    }
+
+    @Test
+    void updateGameFails() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        db.createGame(gameData);
+        GameData gameData2 = new GameData(2, null, "Bob", "MyGame2", new ChessGame());
+        db.createGame(gameData2);
+
+//        Try and make two copies of the same game through updateGame()
+        assertThrows(DataAccessException.class, () -> db.updateGame(1, gameData2));
+    }
 }

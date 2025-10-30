@@ -182,7 +182,27 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void updateGame(int gameID, GameData gameData) throws DataAccessException {
+        String statement = "UPDATE games SET gameID=?, gameName=?, whiteUser=?, blackUser=?, gameString=? WHERE gameID = ?;";
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                int newGameID = gameData.gameID();
+                String newGameName = gameData.gameName();
+                String newWhiteUser = gameData.whiteUsername();
+                String newBlackUser = gameData.blackUsername();
+                String newGame = new Gson().toJson(gameData.game());
 
+                preparedStatement.setInt(1, newGameID);
+                preparedStatement.setString(2, newGameName);
+                preparedStatement.setString(3, newWhiteUser);
+                preparedStatement.setString(4, newBlackUser);
+                preparedStatement.setString(5, newGame);
+                preparedStatement.setInt(6, gameID);
+
+                preparedStatement.execute();
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
