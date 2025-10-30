@@ -124,7 +124,7 @@ public class SQLDataAccess implements DataAccess {
             }
             if (blackUser != null && !blackUser.isBlank()) {
                 try (var preparedStatement = conn.prepareStatement("UPDATE games SET blackUser = ? WHERE gameID = ?;")) {
-                    preparedStatement.setString(1, whiteUser);
+                    preparedStatement.setString(1, blackUser);
                     preparedStatement.setInt(2, gameID);
                     preparedStatement.execute();
                 }
@@ -137,7 +137,7 @@ public class SQLDataAccess implements DataAccess {
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("select * from games where gameID=?;")) {
+            try (var preparedStatement = conn.prepareStatement("SELECT * FROM games WHERE gameID=?")) {
                 preparedStatement.setInt(1, gameID);
                 var rs = preparedStatement.executeQuery();
                 if (rs.next()) {
@@ -158,7 +158,26 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public HashSet<GameData> listGames() throws DataAccessException {
-        return null;
+        var games = new HashSet<GameData>();
+
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement("SELECT * FROM games")) {
+                var rs = preparedStatement.executeQuery();
+                while (rs.next()) {
+                    int gameID = rs.getInt(1);
+                    String gameName = rs.getString(2);
+                    String whiteUser = rs.getString(3);
+                    String blackUser = rs.getString(4);
+                    String gameString = rs.getString(5);
+                    ChessGame game = new Gson().fromJson(gameString, ChessGame.class);
+
+                    games.add(new GameData(gameID, whiteUser, blackUser, gameName, game));
+                }
+                return games;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override

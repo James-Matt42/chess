@@ -1,10 +1,13 @@
 package dataaccess;
 
 import chess.ChessGame;
+import chess.ChessMove;
 import chess.GameData;
 import chess.UserData;
 import org.junit.jupiter.api.Test;
 import service.BadRequestException;
+
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -83,6 +86,9 @@ class DataAccessTest {
         GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
         db.createGame(gameData);
         assertEquals(gameData, db.getGame(1));
+        GameData gameData2 = new GameData(2, null, "Bob", "MyGame2", new ChessGame());
+        db.createGame(gameData2);
+        assertEquals(gameData2, db.getGame(2));
     }
 
     @Test
@@ -92,5 +98,32 @@ class DataAccessTest {
         GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
         db.createGame(gameData);
         assertNull(db.getGame(42));
+    }
+
+    @Test
+    void listGames() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+
+        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        db.createGame(gameData);
+        GameData gameData2 = new GameData(2, null, "joe", "Game2", new ChessGame());
+        db.createGame(gameData2);
+
+        var games = db.listGames();
+
+//        Both games should be found
+        assertTrue(games.contains(gameData));
+        assertTrue(games.contains(gameData2));
+    }
+
+    @Test
+    void listGamesFails() throws DataAccessException {
+//        There isn't a way to fail listGames(), so we'll make sure there aren't unexpected games
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+
+        var nada = db.listGames();
+        assertEquals(new HashSet<GameData>(), nada);
     }
 }
