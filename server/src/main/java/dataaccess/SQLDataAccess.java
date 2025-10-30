@@ -3,6 +3,7 @@ package dataaccess;
 import chess.AuthData;
 import chess.GameData;
 import chess.UserData;
+import com.google.gson.Gson;
 
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class SQLDataAccess implements DataAccess {
                 );""";
         var makeGameTable = """
                 CREATE TABLE IF NOT EXISTS games (
-                    gameID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+                    gameID INT PRIMARY KEY NOT NULL,
                     gameName varchar(255) NOT NULL,
                     whiteUser varchar(50) DEFAULT NULL,
                     blackUser varchar(50) DEFAULT NULL,
@@ -75,7 +76,6 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-//        var rs = executeStatement(String.format("select * from users where username=\"%s\";", username));
         try (var conn = DatabaseManager.getConnection()) {
             try (var preparedStatement = conn.prepareStatement(String.format("select * from users where username=\"%s\";", username))) {
                 var rs = preparedStatement.executeQuery();
@@ -94,7 +94,37 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void createGame(GameData gameData) throws DataAccessException {
+        var serializer = new Gson();
+        var gameString = serializer.toJson(gameData.game());
+        var gameID = gameData.gameID();
+        var gameName = gameData.gameName();
+        var whiteUser = gameData.whiteUsername();
+        var blackUser = gameData.blackUsername();
 
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement("INSERT INTO games (gameID, gameName, gameString) VALUES (?, ?, ?)")) {
+                preparedStatement.setInt(1, gameID);
+                preparedStatement.setString(2, gameName);
+                preparedStatement.setString(3, gameString);
+                preparedStatement.execute();
+            }
+            if (whiteUser != null && !whiteUser.isBlank()) {
+                try (var preparedStatement = conn.prepareStatement("UPDATE games SET whiteUser = ? WHERE gameID = ?;")) {
+                    preparedStatement.setString(1, whiteUser);
+                    preparedStatement.setInt(2, gameID);
+                    preparedStatement.execute();
+                }
+            }
+            if (blackUser != null && !blackUser.isBlank()) {
+                try (var preparedStatement = conn.prepareStatement("UPDATE games SET blackUser = ? WHERE gameID = ?;")) {
+                    preparedStatement.setString(1, whiteUser);
+                    preparedStatement.setInt(2, gameID);
+                    preparedStatement.execute();
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
