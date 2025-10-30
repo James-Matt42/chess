@@ -65,4 +65,14 @@ class DataAccessTest {
 //        Successfully create game without throwing an error
         db.createGame(gameData);
     }
+
+    @Test
+    void createGameFails() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
+        db.clear();
+        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        db.createGame(gameData);
+//        We can't use the same gameID twice
+        assertThrows(DataAccessException.class, () -> db.createGame(gameData));
+    }
 }

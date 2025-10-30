@@ -15,6 +15,19 @@ public class SQLDataAccess implements DataAccess {
         setup();
     }
 
+    private void executeStatement(String statement, String[] injections) throws DataAccessException {
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                for (int i = 1; i < (injections.length + 1); i++) {
+                    preparedStatement.setString(i, injections[i - 1]);
+                }
+                preparedStatement.execute();
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
+    }
+
     private void executeStatement(String statement) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
             try (var preparedStatement = conn.prepareStatement(statement)) {
@@ -25,20 +38,10 @@ public class SQLDataAccess implements DataAccess {
         }
     }
 
-    private void executeStatement(String[] statements) throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection()) {
-            for (var statement : statements) {
-                try (var preparedStatement = conn.prepareStatement(statement)) {
-                    preparedStatement.execute();
-                }
-            }
-        } catch (SQLException e) {
-            throw new DataAccessException(e.getMessage());
-        }
-    }
-
     private void setup() throws DataAccessException {
 //        Change the current database to the chess database
+        executeStatement("CREATE DATABASE IF NOT EXISTS chess");
+        executeStatement("USE chess");
 //        Create the tables with the necessary components
         var makeUserTable = """
                 CREATE TABLE IF NOT EXISTS users (
@@ -56,31 +59,30 @@ public class SQLDataAccess implements DataAccess {
                     blackUser varchar(50) DEFAULT NULL,
                     gameString LONGTEXT NOT NULL
                 );""";
-        executeStatement(new String[]{makeUserTable, makeGameTable});
+
+        executeStatement(makeUserTable);
+        executeStatement(makeGameTable);
     }
 
     @Override
     public void clear() throws DataAccessException {
-//        Deletes the tables and then remakes them so that the database and table structure always exists
-        executeStatement(new String[]{"drop table users", "drop table games"});
-        setup();
+        executeStatement("TRUNCATE games");
+        executeStatement("TRUNCATE users");
     }
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        var new_user = String.format("INSERT INTO users (username, password, email) " +
-                        "VALUES (\"%s\", \"%s\", \"%s\")",
-                user.username(), user.password(), user.email());
-        executeStatement(new String[]{"use chess", new_user});
+        var new_user = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+        executeStatement(new_user, new String[]{user.username(), user.password(), user.email()});
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement(String.format("select * from users where username=\"%s\";", username))) {
+            try (var preparedStatement = conn.prepareStatement("select * from users where username=?;")) {
+                preparedStatement.setString(1, username);
                 var rs = preparedStatement.executeQuery();
                 if (rs.next()) {
-                    System.out.println(rs.getInt(1));
                     String password = rs.getString(3);
                     String email = rs.getString(4);
                     return new UserData(username, password, email);
