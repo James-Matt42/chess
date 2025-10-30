@@ -1,6 +1,7 @@
 package dataaccess;
 
 import chess.AuthData;
+import chess.ChessGame;
 import chess.GameData;
 import chess.UserData;
 import com.google.gson.Gson;
@@ -62,6 +63,10 @@ public class SQLDataAccess implements DataAccess {
 
         executeStatement(makeUserTable);
         executeStatement(makeGameTable);
+    }
+
+    private boolean isStringSafe(String string) {
+        return string.matches("[a-zA-Z @.]+");
     }
 
     @Override
@@ -131,7 +136,24 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public GameData getGame(int gameID) throws DataAccessException {
-        return null;
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var preparedStatement = conn.prepareStatement("select * from games where gameID=?;")) {
+                preparedStatement.setInt(1, gameID);
+                var rs = preparedStatement.executeQuery();
+                if (rs.next()) {
+                    String gameName = rs.getString(2);
+                    String whiteUser = rs.getString(3);
+                    String blackUser = rs.getString(4);
+                    String gameString = rs.getString(5);
+                    ChessGame game = new Gson().fromJson(gameString, ChessGame.class);
+
+                    return new GameData(gameID, whiteUser, blackUser, gameName, game);
+                }
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException(e.getMessage());
+        }
     }
 
     @Override
