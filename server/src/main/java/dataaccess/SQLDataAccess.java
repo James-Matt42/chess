@@ -40,8 +40,7 @@ public class SQLDataAccess implements DataAccess {
 
     private void setup() throws DataAccessException {
 //        Change the current database to the chess database
-        executeStatement("CREATE DATABASE IF NOT EXISTS chess");
-        executeStatement("USE chess");
+        DatabaseManager.createDatabase();
 //        Create the tables with the necessary components
         var makeUserTable = """
                 CREATE TABLE IF NOT EXISTS users (
@@ -85,7 +84,7 @@ public class SQLDataAccess implements DataAccess {
     @Override
     public UserData getUser(String username) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("select * from users where username=?;")) {
+            try (var preparedStatement = conn.prepareStatement("SELECT * FROM users WHERE username=?;")) {
                 preparedStatement.setString(1, username);
                 var rs = preparedStatement.executeQuery();
                 if (rs.next()) {
