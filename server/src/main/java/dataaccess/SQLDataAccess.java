@@ -78,8 +78,8 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        var new_user = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
-        executeStatement(new_user, new String[]{user.username(), user.password(), user.email()});
+        var newUser = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+        executeStatement(newUser, new String[]{user.username(), user.password(), user.email()});
     }
 
     @Override
