@@ -87,9 +87,11 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public AuthData getAuth(String authToken) throws DataAccessException {
+    public HashSet<AuthData> getAuth(String authToken) throws DataAccessException {
         try {
-            return authTokens.get(authToken);
+            var authDatas = new HashSet<AuthData>();
+            authDatas.add(authTokens.get(authToken));
+            return authDatas;
         } catch (Exception e) {
             throw new DataAccessException(e.getMessage());
         }

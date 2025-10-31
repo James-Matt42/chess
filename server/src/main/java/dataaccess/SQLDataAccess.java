@@ -48,9 +48,8 @@ public class SQLDataAccess implements DataAccess {
                     userID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
                     username VARCHAR(50) NOT NULL,
                     password VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) NOT NULL,
-                    authToken VARCHAR(255) DEFAULT NULL
-                );""";
+                    email VARCHAR(255) NOT NULL
+                )""";
         var makeGameTable = """
                 CREATE TABLE IF NOT EXISTS games (
                     gameID INT PRIMARY KEY NOT NULL,
@@ -58,10 +57,16 @@ public class SQLDataAccess implements DataAccess {
                     whiteUser varchar(50) DEFAULT NULL,
                     blackUser varchar(50) DEFAULT NULL,
                     gameString LONGTEXT NOT NULL
-                );""";
+                )""";
+        var makeAuthTable = """
+                CREATE TABLE IF NOT EXISTS authData (
+                	authToken VARCHAR(255) PRIMARY KEY NOT NULL,
+                	username VARCHAR(50) NOT NULL
+                )""";
 
         executeStatement(makeUserTable);
         executeStatement(makeGameTable);
+        executeStatement(makeAuthTable);
     }
 
     private boolean isStringSafe(String string) {
@@ -72,6 +77,7 @@ public class SQLDataAccess implements DataAccess {
     public void clear() throws DataAccessException {
         executeStatement("TRUNCATE games");
         executeStatement("TRUNCATE users");
+        executeStatement("TRUNCATE authData");
     }
 
     @Override
@@ -207,7 +213,7 @@ public class SQLDataAccess implements DataAccess {
     @Override
     public void createAuth(AuthData authData) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("UPDATE users SET authToken = ? WHERE username = ?")) {
+            try (var preparedStatement = conn.prepareStatement("INSERT INTO authData (authToken, username) VALUES (?, ?)")) {
                 preparedStatement.setString(1, authData.authToken());
                 preparedStatement.setString(2, authData.username());
                 preparedStatement.execute();
@@ -218,16 +224,17 @@ public class SQLDataAccess implements DataAccess {
     }
 
     @Override
-    public AuthData getAuth(String authToken) throws DataAccessException {
+    public HashSet<AuthData> getAuth(String authToken) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("SELECT * FROM users WHERE authToken=?")) {
+            try (var preparedStatement = conn.prepareStatement("SELECT * FROM authData WHERE authToken=?")) {
                 preparedStatement.setString(1, authToken);
                 var rs = preparedStatement.executeQuery();
-                if (rs.next()) {
+                var authDatas = new HashSet<AuthData>();
+                while (rs.next()) {
                     String username = rs.getString(2);
-                    return new AuthData(authToken, username);
+                    authDatas.add(new AuthData(authToken, username));
                 }
-                return null;
+                return authDatas;
             }
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
@@ -237,7 +244,7 @@ public class SQLDataAccess implements DataAccess {
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("UPDATE users SET authToken = NULL where authToken = ?")) {
+            try (var preparedStatement = conn.prepareStatement("DELETE FROM authData WHERE authToken=?")) {
                 preparedStatement.setString(1, authToken);
                 preparedStatement.execute();
             }

@@ -1,7 +1,10 @@
 package service;
 
 import chess.*;
+import dataaccess.DataAccessException;
 import dataaccess.MemoryDataAccess;
+import dataaccess.SQLDataAccess;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -10,9 +13,15 @@ class UserServiceTest {
 
     private final UserData user = new UserData("Joe", "myPassword", "jj@j.com");
 
-    private UserService newService() {
-        MemoryDataAccess db = new MemoryDataAccess();
+    private UserService newService() throws DataAccessException {
+        SQLDataAccess db = new SQLDataAccess();
         return new UserService(db);
+    }
+
+    @BeforeEach
+    void setup() throws DataAccessException {
+        var service = newService();
+        service.clear();
     }
 
     @Test
@@ -54,6 +63,7 @@ class UserServiceTest {
     @Test
     void login() throws Exception {
         var service = newService();
+        service.clear();
         service.register(user);
         AuthData authData = service.login(new LoginRequest(user.username(), user.password()));
         assertNotNull(authData);

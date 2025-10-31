@@ -3,6 +3,7 @@ package service;
 import chess.*;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.HashSet;
 import java.util.UUID;
@@ -19,6 +20,10 @@ public class UserService {
         dataAccess.clear();
     }
 
+    private String encryptPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt());
+    }
+
     public AuthData register(UserData user) throws AlreadyTakenException, BadRequestException, DataAccessException {
         if (user.username() == null || user.password() == null || user.email() == null) {
             throw new BadRequestException("bad request");
@@ -30,7 +35,7 @@ public class UserService {
             throw new AlreadyTakenException("already taken");
         }
 
-        dataAccess.createUser(user);
+        dataAccess.createUser(new UserData(user.username(), encryptPassword(user.password()), user.email()));
         var authData = new AuthData(generateAuthToken(), user.username());
         dataAccess.createAuth(authData);
         return authData;
@@ -48,7 +53,7 @@ public class UserService {
         if (userData == null) {
             throw new InvalidAuthException("unauthorized");
         }
-        if (!userData.password().equals(loginRequest.password())) {
+        if (!BCrypt.checkpw(loginRequest.password(), userData.password())) {
             throw new InvalidAuthException("unauthorized");
         }
 
@@ -58,8 +63,8 @@ public class UserService {
     }
 
     public void logout(String authToken) throws DataAccessException {
-        var authData = verifyAuth(authToken);
-        dataAccess.deleteAuth(authData.authToken());
+        verifyAuth(authToken);
+        dataAccess.deleteAuth(authToken);
     }
 
     public HashSet<ReturnGameData> listGames(String authToken) throws InvalidAuthException, DataAccessException {
@@ -122,13 +127,20 @@ public class UserService {
             throw new InvalidAuthException("unauthorized");
         }
 
+        AuthData data = null;
         var authData = dataAccess.getAuth(authToken);
 
-        if (authData == null) {
+        for (var d : authData) {
+            if (d.authToken().equals(authToken)) {
+                data = d;
+            }
+        }
+
+        if (data == null) {
             throw new InvalidAuthException("unauthorized");
         }
 
-        return authData;
+        return data;
     }
 
     public static String generateAuthToken() {

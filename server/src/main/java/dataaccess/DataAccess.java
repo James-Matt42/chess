@@ -21,7 +21,7 @@ public interface DataAccess {
 
     void createAuth(AuthData authData) throws DataAccessException;
 
-    AuthData getAuth(String authToken) throws DataAccessException;
+    HashSet<AuthData> getAuth(String authToken) throws DataAccessException;
 
     void deleteAuth(String authToken) throws DataAccessException;
 }
