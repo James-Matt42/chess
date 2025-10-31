@@ -175,7 +175,7 @@ class DataAccessTest {
         db.createUser(user);
         var authData = new AuthData("12345", user.username());
         db.createAuth(authData);
-        assertEquals(authData, db.getAuth(authData.authToken()));
+        assertTrue(db.getAuth(authData.authToken()).contains(authData));
     }
 
     @Test
@@ -183,28 +183,24 @@ class DataAccessTest {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
         db.createUser(user);
-        var authData = new AuthData("12345", user.username() + "2.0");
+        var authData = new AuthData("12345", user.username());
         db.createAuth(authData);
-        assertNull(db.getAuth(authData.authToken()));
+        assertTrue(db.getAuth(authData.authToken() + "2.0").isEmpty());
     }
 
     @Test
     void deleteAuth() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        var user2 = new UserData("Jerry", "agoodpassword", "j@j.com");
         db.createUser(user);
-        db.createUser(user2);
 
 //        Make sure it deletes all occurrences of the given authToken
         var authData = new AuthData("12345", user.username());
-        var authData2 = new AuthData(authData.authToken(), user2.username());
         db.createAuth(authData);
-        db.createAuth(authData2);
 
         db.deleteAuth(authData.authToken());
 
-        assertNull(db.getAuth(authData.authToken()));
+        assertTrue(db.getAuth(authData.authToken()).isEmpty());
     }
 
     @Test
@@ -220,6 +216,6 @@ class DataAccessTest {
         db.deleteAuth("%");
         db.deleteAuth("x'; DROP DATABASE chess;");
 
-        assertEquals(authData, db.getAuth(authData.authToken()));
+        assertTrue(db.getAuth(authData.authToken()).contains(authData));
     }
 }

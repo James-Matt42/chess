@@ -69,10 +69,6 @@ public class SQLDataAccess implements DataAccess {
         executeStatement(makeAuthTable);
     }
 
-    private boolean isStringSafe(String string) {
-        return string.matches("[a-zA-Z @.]+");
-    }
-
     @Override
     public void clear() throws DataAccessException {
         executeStatement("TRUNCATE games");
