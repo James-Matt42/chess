@@ -1,6 +1,7 @@
 package client;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assertions.*;
 import server.Server;
 
 
@@ -14,7 +15,7 @@ public class ServerFacadeTests {
         server = new Server();
         var port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
-        facade = new ServerFacade(String.format("https://localhost:%d", port));
+        facade = new ServerFacade(String.format("http://localhost:%d", port));
     }
 
     @AfterAll
@@ -27,5 +28,16 @@ public class ServerFacadeTests {
     public void sampleTest() {
         Assertions.assertTrue(true);
     }
+
+    @Test
+    public void clear() throws Exception {
+//        Makes sure the server clears without an exception
+        facade.clear();
+    }
+
+//    @Test
+//    public void __() throws Exception {
+//
+//    }
 
 }

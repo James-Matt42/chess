@@ -8,7 +8,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 public class ServerFacade {
-    private final HttpClient client = HttpClient.newHttpClient();
+    private static final HttpClient client = HttpClient.newHttpClient();
     private final String serverUrl;
 
     public ServerFacade(String serverUrl) {
@@ -19,8 +19,19 @@ public class ServerFacade {
         serverUrl = String.format("http://localhost:%d", port);
     }
 
-    public void clear() {
+    public static void main(String[] args) throws Exception {
 
+    }
+
+
+    public void clear() throws Exception {
+        try {
+            var request = buildRequest("DELETE", "/db", null);
+            sendRequest(request);
+        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//            System.out.println("Exception occurred during clear: " + e.getMessage());
+        }
     }
 
     private HttpRequest buildRequest(String method, String path, Object body) {
@@ -43,6 +54,7 @@ public class ServerFacade {
 
     private HttpResponse<String> sendRequest(HttpRequest request) throws Exception {
         try {
+//            System.out.println(request.toString());
             return client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             throw new RuntimeException(e);
