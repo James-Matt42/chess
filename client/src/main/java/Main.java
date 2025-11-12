@@ -43,13 +43,13 @@ public class Main {
     }
 
     private static void processInput(ServerFacade facade, String input) throws Exception {
-        String[] params = input.split(" ");
-        String command = params[0];
+        String[] args = input.split(" ");
+        String command = args[0];
         switch (state) {
             case LOGGED_OUT -> {
                 switch (command.toLowerCase()) {
-                    case "login" -> login(facade, params);
-                    case "register" -> register(facade, params);
+                    case "login" -> login(facade, args);
+                    case "register" -> register(facade, args);
                     case "quit" -> {
                     }
                     default -> help();
@@ -58,9 +58,9 @@ public class Main {
             case LOGGED_IN -> {
                 switch (command.toLowerCase()) {
                     case "logout" -> logout(facade);
-                    case "create" -> createGame();
+                    case "create" -> createGame(facade, args);
                     case "list" -> listGames();
-                    case "play" -> playGame(facade, params);
+                    case "play" -> playGame(facade, args);
                     case "observe" -> observeGame();
                     default -> help();
                 }
@@ -100,7 +100,13 @@ public class Main {
 
     }
 
-    private static void createGame() {
+    private static void createGame(ServerFacade facade, String[] args) throws Exception {
+        checkInputSize(2, args);
+
+        String gameName = args[1].strip();
+
+        int gameID = facade.createGame(gameName);
+        System.out.printf("Game '%s' created successfully with game ID = %d%n", gameName, gameID);
     }
 
     private static void logout(ServerFacade facade) throws Exception {
