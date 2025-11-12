@@ -9,7 +9,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,6 @@ public class ServerFacade {
 
     }
 
-
     public void clear() throws Exception {
         HttpRequest request = buildRequest("DELETE", "/db", null, null);
         sendRequest(request);
@@ -45,10 +43,9 @@ public class ServerFacade {
     public int login(String username, String password) throws Exception {
         HttpRequest request = buildRequest("POST", "/session", Map.of("username", username, "password", password), null);
         var response = sendRequest(request);
-        if (!isSuccessful(response.statusCode())) {
-            var body = new Gson().fromJson(response.body(), Map.class);
-            throw new Exception(body.get("message").toString());
-        }
+
+        throwIfException(response);
+
         var authData = new Gson().fromJson(response.body(), AuthData.class);
         authToken = authData.authToken();
         return LOGGED_IN;
@@ -57,32 +54,27 @@ public class ServerFacade {
     public void logout() throws Exception {
         HttpRequest request = buildRequest("DELETE", "/session", null, new String[]{"authorization", authToken});
         var response = sendRequest(request);
-        if (isSuccessful(response.statusCode())) {
-            authToken = "";
-        } else {
-            throw new Exception(new Gson().fromJson(response.body(), Map.class).get("message").toString());
-        }
+
+        throwIfException(response);
+
+        authToken = "";
     }
 
-    public boolean register(String username, String password, String email) throws Exception {
+    public void register(String username, String password, String email) throws Exception {
         HttpRequest request = buildRequest("POST", "/user", Map.of("username", username, "password", password, "email", email), null);
         var response = sendRequest(request);
-        if (!isSuccessful(response.statusCode())) {
-            return false;
-        }
+
+        throwIfException(response);
+
         var authData = new Gson().fromJson(response.body(), AuthData.class);
         authToken = authData.authToken();
-        return true;
     }
 
     public List<GameData> listGames() throws Exception {
         HttpRequest request = buildRequest("GET", "/game", null, new String[]{"authorization", authToken});
         var response = sendRequest(request);
 
-        if (!isSuccessful(response.statusCode())) {
-            var body = new Gson().fromJson(response.body(), Map.class);
-            throw new Exception((String) body.get("message"));
-        }
+        throwIfException(response);
 
         var mapType = new TypeToken<Map<String, ArrayList<GameData>>>() {
         }.getType();
@@ -95,15 +87,30 @@ public class ServerFacade {
         HttpRequest request = buildRequest("POST", "/game", Map.of("gameName", gameName), new String[]{"authorization", authToken});
         var response = sendRequest(request);
 
-        if (!isSuccessful(response.statusCode())) {
-            var body = new Gson().fromJson(response.body(), Map.class);
-            throw new Exception((String) body.get("message"));
-        }
+        throwIfException(response);
 
         var mapType = new TypeToken<Map<String, Integer>>() {
         }.getType();
         var body = (Map<String, Integer>) new Gson().fromJson(response.body(), mapType);
         return body.get("gameID");
+    }
+
+    public void joinGame(String playerColor, int gameID) throws Exception {
+        if (!playerColor.equals("WHITE") && !playerColor.equals("BLACK")) {
+            throw new Exception("Color must be 'WHITE' or 'BLACK'");
+        }
+
+        HttpRequest request = buildRequest("PUT", "/game", Map.of("playerColor", playerColor, "gameID", gameID), new String[]{"authorization", authToken});
+        var response = sendRequest(request);
+
+        throwIfException(response);
+    }
+
+    private void throwIfException(HttpResponse<String> response) throws Exception {
+        if (!isSuccessful(response.statusCode())) {
+            var body = new Gson().fromJson(response.body(), Map.class);
+            throw new Exception((String) body.get("message"));
+        }
     }
 
     private HttpRequest buildRequest(String method, String path, Object body, String[] header) {

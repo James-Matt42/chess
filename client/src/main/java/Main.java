@@ -80,11 +80,10 @@ public class Main {
 
     private static void register(ServerFacade facade, String username, String password, String email) {
         try {
-            if (!facade.register(username, password, email)) {
-                System.out.println("Registration was unsuccessful");
-            }
+            facade.register(username, password, email);
         } catch (Exception e) {
-            System.out.println("An exception occurred during registration");
+            System.out.println(e.getMessage());
+//            System.out.println("An exception occurred during registration");
         }
     }
 

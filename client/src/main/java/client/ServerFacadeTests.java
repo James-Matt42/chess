@@ -107,4 +107,26 @@ public class ServerFacadeTests {
     public void listGamesFails() throws Exception {
         assertThrows(Exception.class, () -> facade.listGames());
     }
+
+    @Test
+    public void joinGame() throws Exception {
+        facade.register(username, password, email);
+        facade.login(username, password);
+
+        var gameID = facade.createGame("myGame");
+
+        facade.joinGame("WHITE", gameID);
+    }
+
+    @Test
+    public void joinGameFails() throws Exception {
+        assertThrows(Exception.class, () -> facade.joinGame("WHITE", 1));
+
+        facade.register(username, password, email);
+        facade.login(username, password);
+
+        var gameID = facade.createGame("myGame");
+
+        assertThrows(Exception.class, () -> facade.joinGame("BEIGE", gameID));
+    }
 }
