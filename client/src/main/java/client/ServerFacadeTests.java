@@ -25,8 +25,9 @@ public class ServerFacadeTests {
     }
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws Exception {
         facade = new ServerFacade(String.format("http://localhost:%d", port));
+        clear();
     }
 
     @AfterAll
@@ -77,5 +78,30 @@ public class ServerFacadeTests {
         facade.login(username, password + "2");
 
         assertFalse(facade.logout());
+    }
+
+    @Test
+    public void createGame() throws Exception {
+        facade.register(username, password, email);
+        facade.login(username, password);
+
+        var gameID = facade.createGame("myGame");
+        assertNotEquals(-1, gameID);
+        var gameID2 = facade.createGame("myGame2");
+        assertNotEquals(-1, gameID2);
+    }
+
+    @Test
+    public void createGameFails() throws Exception {
+        assertThrows(Exception.class, () -> facade.createGame("myGame"));
+    }
+
+    @Test
+    public void listGames() throws Exception {
+        facade.register(username, password, email);
+        facade.login(username, password);
+
+        var games = facade.listGames();
+        assertEquals(0, games.size());
     }
 }

@@ -1,6 +1,7 @@
 package client;
 
 import chess.AuthData;
+import chess.GameData;
 import com.google.gson.Gson;
 
 import java.net.URI;
@@ -8,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.KeyPair;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +71,38 @@ public class ServerFacade {
         var authData = new Gson().fromJson(response.body(), AuthData.class);
         authToken = authData.authToken();
         return true;
+    }
+
+    public List<GameData> listGames() throws Exception {
+        HttpRequest request = buildRequest("GET", "/game", null, new String[]{"authorization", authToken});
+        var response = sendRequest(request);
+        if (!isSuccessful(response.statusCode())) {
+//            return true;
+        }
+        ArrayList<String> games_string = (ArrayList<String>) new Gson().fromJson(response.body(), Map.class).get("games");
+        var games = new ArrayList<GameData>();
+        var serializer = new Gson();
+        for (var game_string : games_string) {
+//            games.add()
+        }
+        return games;
+    }
+
+    public int createGame(String gameName) throws Exception {
+        HttpRequest request = buildRequest("POST", "/game", Map.of("gameName", gameName), new String[]{"authorization", authToken});
+        var response = sendRequest(request);
+        var body = new Gson().fromJson(response.body(), Map.class);
+
+        if (!isSuccessful(response.statusCode())) {
+            throw new Exception((String) body.get("message"));
+        }
+
+        try {
+            Double gameID = (Double) body.get("gameID");
+            return gameID.intValue();
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     private HttpRequest buildRequest(String method, String path, Object body, String[] header) {
