@@ -4,11 +4,16 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Assertions.*;
 import server.Server;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ServerFacadeTests {
 
     private static Server server;
     static ServerFacade facade;
+
+    private final String username = "Joe";
+    private final String password = "mypassword";
+    private final String email = "j@j.com";
 
     @BeforeAll
     public static void init() {
@@ -35,9 +40,13 @@ public class ServerFacadeTests {
         facade.clear();
     }
 
-//    @Test
-//    public void __() throws Exception {
-//
-//    }
+    @Test
+    public void register() throws Exception {
+        facade.register(username, password, email);
+    }
 
+    @Test
+    public void registerFails() throws Exception {
+        assertThrows(Exception.class, () -> facade.register(username, password, null));
+    }
 }

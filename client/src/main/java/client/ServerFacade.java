@@ -6,10 +6,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 
 public class ServerFacade {
     private static final HttpClient client = HttpClient.newHttpClient();
     private final String serverUrl;
+    private String authToken;
+
+    static final int LOGGED_OUT = 0;
+    static final int LOGGED_IN = 1;
+    static final int IN_GAME = 2;
 
     public ServerFacade(String serverUrl) {
         this.serverUrl = serverUrl;
@@ -25,13 +31,18 @@ public class ServerFacade {
 
 
     public void clear() throws Exception {
-        try {
-            var request = buildRequest("DELETE", "/db", null);
-            sendRequest(request);
-        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//            System.out.println("Exception occurred during clear: " + e.getMessage());
-        }
+        HttpRequest request = buildRequest("DELETE", "/db", null);
+        sendRequest(request);
+    }
+
+    public void login(String username, String password) throws Exception {
+
+    }
+
+    public boolean register(String username, String password, String email) throws Exception {
+        HttpRequest request = buildRequest("POST", "/user", Map.of("username", username, "password", password, "email", email));
+        var response = sendRequest(request);
+        return isSuccessful(response.statusCode());
     }
 
     private HttpRequest buildRequest(String method, String path, Object body) {

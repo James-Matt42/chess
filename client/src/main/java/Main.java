@@ -27,21 +27,22 @@ public class Main {
         while (!(result.equals("quit") && state == LOGGED_OUT)) {
             printPrompt();
             String line = scanner.nextLine();
-            processInput(line);
+            processInput(facade, line);
             System.out.format("You typed: %s\n", line);
             result = line;
         }
         server.stop();
     }
 
-    private static void processInput(String input) {
-        String command = input.split(" ")[0];
+    private static void processInput(ServerFacade facade, String input) {
+        String[] params = input.split(" ");
+        String command = params[0];
         switch (state) {
             case LOGGED_OUT -> {
                 switch (command.toLowerCase()) {
                     case "help" -> help();
                     case "login" -> login();
-                    case "register" -> register();
+                    case "register" -> register(facade, params[1], params[2], params[3]);
                 }
             }
             case LOGGED_IN -> {
@@ -68,6 +69,7 @@ public class Main {
     }
 
     private static void listGames() {
+
     }
 
     private static void createGame() {
@@ -76,7 +78,14 @@ public class Main {
     private static void logout() {
     }
 
-    private static void register() {
+    private static void register(ServerFacade facade, String username, String password, String email) {
+        try {
+            if (!facade.register(username, password, email)) {
+                System.out.println("Registration was unsuccessful");
+            }
+        } catch (Exception e) {
+            System.out.println("An exception occurred during registration");
+        }
     }
 
     private static void login() {
