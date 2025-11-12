@@ -59,13 +59,16 @@ public class Main {
                 switch (command.toLowerCase()) {
                     case "logout" -> logout(facade);
                     case "create" -> createGame(facade, args);
-                    case "list" -> listGames();
+                    case "list" -> listGames(facade);
                     case "play" -> playGame(facade, args);
                     case "observe" -> observeGame();
                     default -> help();
                 }
             }
             case IN_GAME -> {
+                if (command.toLowerCase().equals("quit")) {
+                    state = LOGGED_IN;
+                }
                 System.out.println("Not yet developed");
             }
             default -> help();
@@ -94,10 +97,14 @@ public class Main {
         }
 
         facade.joinGame(color, gameIDInt);
+        state = IN_GAME;
     }
 
-    private static void listGames() {
-
+    private static void listGames(ServerFacade facade) throws Exception {
+        var games = facade.listGames();
+        for (var game : games) {
+            System.out.printf("Game: %s\tGame ID: %d%n", game.gameName(), game.gameID());
+        }
     }
 
     private static void createGame(ServerFacade facade, String[] args) throws Exception {
