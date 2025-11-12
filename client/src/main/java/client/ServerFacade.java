@@ -7,6 +7,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.KeyPair;
+import java.util.List;
 import java.util.Map;
 
 public class ServerFacade {
@@ -20,6 +22,7 @@ public class ServerFacade {
 
     public ServerFacade(String serverUrl) {
         this.serverUrl = serverUrl;
+        authToken = "";
     }
 
     public ServerFacade(int port) {
@@ -32,12 +35,12 @@ public class ServerFacade {
 
 
     public void clear() throws Exception {
-        HttpRequest request = buildRequest("DELETE", "/db", null);
+        HttpRequest request = buildRequest("DELETE", "/db", null, null);
         sendRequest(request);
     }
 
     public int login(String username, String password) throws Exception {
-        HttpRequest request = buildRequest("POST", "/session", Map.of("username", username, "password", password));
+        HttpRequest request = buildRequest("POST", "/session", Map.of("username", username, "password", password), null);
         var response = sendRequest(request);
         if (!isSuccessful(response.statusCode())) {
             return LOGGED_OUT;
@@ -47,8 +50,18 @@ public class ServerFacade {
         return LOGGED_IN;
     }
 
+    public boolean logout() throws Exception {
+        HttpRequest request = buildRequest("DELETE", "/session", null, new String[]{"authorization", authToken});
+        var response = sendRequest(request);
+        if (isSuccessful(response.statusCode())) {
+            authToken = "";
+            return true;
+        }
+        return false;
+    }
+
     public boolean register(String username, String password, String email) throws Exception {
-        HttpRequest request = buildRequest("POST", "/user", Map.of("username", username, "password", password, "email", email));
+        HttpRequest request = buildRequest("POST", "/user", Map.of("username", username, "password", password, "email", email), null);
         var response = sendRequest(request);
         if (!isSuccessful(response.statusCode())) {
             return false;
@@ -58,11 +71,13 @@ public class ServerFacade {
         return true;
     }
 
-    private HttpRequest buildRequest(String method, String path, Object body) {
+    private HttpRequest buildRequest(String method, String path, Object body, String[] header) {
         var request = HttpRequest.newBuilder()
                 .uri(URI.create(serverUrl + path))
                 .method(method, makeRequestBody(body));
-        if (body != null) {
+        if (header != null) {
+            request.setHeader(header[0], header[1]);
+        } else if (body != null) {
             request.setHeader("Content-Type", "application/json");
         }
         return request.build();

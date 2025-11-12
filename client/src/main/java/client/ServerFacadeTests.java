@@ -5,14 +5,14 @@ import org.junit.jupiter.api.Assertions.*;
 import server.Server;
 
 import static client.ServerFacade.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ServerFacadeTests {
 
     private static Server server;
     static ServerFacade facade;
 
+    private static int port;
     private final String username = "Joe";
     private final String password = "mypassword";
     private final String email = "j@j.com";
@@ -20,8 +20,12 @@ public class ServerFacadeTests {
     @BeforeAll
     public static void init() {
         server = new Server();
-        var port = server.run(0);
+        port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
+    }
+
+    @BeforeEach
+    public void setup() {
         facade = new ServerFacade(String.format("http://localhost:%d", port));
     }
 
@@ -30,11 +34,6 @@ public class ServerFacadeTests {
         server.stop();
     }
 
-
-    @Test
-    public void sampleTest() {
-        Assertions.assertTrue(true);
-    }
 
     @Test
     public void clear() throws Exception {
@@ -62,5 +61,21 @@ public class ServerFacadeTests {
     public void loginFails() throws Exception {
         facade.register(username, password, email);
         assertEquals(LOGGED_OUT, facade.login(username, password + "2"));
+    }
+
+    @Test
+    public void logout() throws Exception {
+        facade.register(username, password, email);
+        facade.login(username, password);
+
+        assertTrue(facade.logout());
+    }
+
+    @Test
+    public void logoutFails() throws Exception {
+        facade.register(username, password, email);
+        facade.login(username, password + "2");
+
+        assertFalse(facade.logout());
     }
 }
