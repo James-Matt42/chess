@@ -4,6 +4,8 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Assertions.*;
 import server.Server;
 
+import static client.ServerFacade.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ServerFacadeTests {
@@ -48,5 +50,17 @@ public class ServerFacadeTests {
     @Test
     public void registerFails() throws Exception {
         assertThrows(Exception.class, () -> facade.register(username, password, null));
+    }
+
+    @Test
+    public void login() throws Exception {
+        facade.register(username, password, email);
+        assertEquals(LOGGED_IN, facade.login(username, password));
+    }
+
+    @Test
+    public void loginFails() throws Exception {
+        facade.register(username, password, email);
+        assertEquals(LOGGED_OUT, facade.login(username, password + "2"));
     }
 }

@@ -1,5 +1,6 @@
 package client;
 
+import chess.AuthData;
 import com.google.gson.Gson;
 
 import java.net.URI;
@@ -35,14 +36,26 @@ public class ServerFacade {
         sendRequest(request);
     }
 
-    public void login(String username, String password) throws Exception {
-
+    public int login(String username, String password) throws Exception {
+        HttpRequest request = buildRequest("POST", "/session", Map.of("username", username, "password", password));
+        var response = sendRequest(request);
+        if (!isSuccessful(response.statusCode())) {
+            return LOGGED_OUT;
+        }
+        var authData = new Gson().fromJson(response.body(), AuthData.class);
+        authToken = authData.authToken();
+        return LOGGED_IN;
     }
 
     public boolean register(String username, String password, String email) throws Exception {
         HttpRequest request = buildRequest("POST", "/user", Map.of("username", username, "password", password, "email", email));
         var response = sendRequest(request);
-        return isSuccessful(response.statusCode());
+        if (!isSuccessful(response.statusCode())) {
+            return false;
+        }
+        var authData = new Gson().fromJson(response.body(), AuthData.class);
+        authToken = authData.authToken();
+        return true;
     }
 
     private HttpRequest buildRequest(String method, String path, Object body) {
