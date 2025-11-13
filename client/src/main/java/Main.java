@@ -2,7 +2,12 @@ import chess.*;
 import client.ServerFacade;
 import server.Server;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
+
+import static ui.EscapeSequences.*;
 
 public class Main {
 
@@ -13,9 +18,6 @@ public class Main {
     static final int IN_GAME = 2;
 
     public static void main(String[] args) {
-        var piece = new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN);
-        System.out.println("♕ 240 Chess Client: " + piece);
-
         state = LOGGED_OUT;
 
         Server server = new Server();
@@ -27,6 +29,7 @@ public class Main {
             throw new RuntimeException(e);
         }
 
+        System.out.println(WHITE_QUEEN + " 240 Chess Client: " + BLACK_QUEEN);
         Scanner scanner = new Scanner(System.in);
         var result = "";
         while (!(result.equals("quit") && state == LOGGED_OUT)) {
@@ -45,6 +48,11 @@ public class Main {
     private static void processInput(ServerFacade facade, String input) throws Exception {
         String[] args = input.split(" ");
         String command = args[0];
+
+        if (command.equals("board")) {
+            drawBoard("WHITE", new ChessGame().getBoard());
+        }
+
         switch (state) {
             case LOGGED_OUT -> {
                 switch (command.toLowerCase()) {
@@ -61,21 +69,26 @@ public class Main {
                     case "create" -> createGame(facade, args);
                     case "list" -> listGames(facade);
                     case "play" -> playGame(facade, args);
-                    case "observe" -> observeGame();
+                    case "observe" -> observeGame(facade, args);
                     default -> help();
                 }
             }
             case IN_GAME -> {
-                if (command.toLowerCase().equals("quit")) {
+                if (command.equalsIgnoreCase("quit")) {
                     state = LOGGED_IN;
+                } else {
+                    System.out.println("Not yet developed, type 'quit' to quit");
                 }
-                System.out.println("Not yet developed");
             }
             default -> help();
         }
     }
 
-    private static void observeGame() {
+    private static void observeGame(ServerFacade facade, String[] args) throws Exception {
+        checkInputSize(2, args);
+
+        drawBoard("WHITE", new ChessGame().getBoard());
+
         System.out.println("Observing will be possible in phase 6");
     }
 
@@ -85,7 +98,7 @@ public class Main {
         String gameID = args[1];
         String color = args[2];
 
-        int gameIDInt = 0;
+        int gameIDInt;
         try {
             gameIDInt = Integer.parseInt(gameID);
         } catch (NumberFormatException e) {
@@ -98,6 +111,8 @@ public class Main {
 
         facade.joinGame(color, gameIDInt);
         state = IN_GAME;
+
+        drawBoard(color, new ChessGame().getBoard());
     }
 
     private static void listGames(ServerFacade facade) throws Exception {
@@ -130,9 +145,10 @@ public class Main {
 
         try {
             facade.register(username, password, email);
+            facade.login(username, password);
+            state = LOGGED_IN;
         } catch (Exception e) {
             System.out.println(e.getMessage());
-//            System.out.println("An exception occurred during registration");
         }
     }
 
@@ -150,32 +166,24 @@ public class Main {
 //        Print out all the different help options
         String helpText;
         switch (state) {
-            case LOGGED_OUT -> {
-                helpText = """
-                        help -- list possible commands
-                        register <USERNAME> <PASSWORD> <EMAIL> -- register a new user
-                        login <USERNAME> <PASSWORD> -- login an existing user
-                        quit -- end the program
-                        """;
-            }
-            case LOGGED_IN -> {
-                helpText = """
-                        help -- list possible commands
-                        logout -- logout from the current user
-                        create <NAME> -- create a new game
-                        play <ID> [WHITE|BLACK] -- join a game
-                        observe <ID> -- observe a game
-                        list -- list all games
-                        """;
-            }
-            case IN_GAME -> {
-                helpText = """
-                        Coming Soon!
-                        """;
-            }
-            default -> {
-                helpText = "A strange error has occurred";
-            }
+            case LOGGED_OUT -> helpText = """
+                    help -- list possible commands
+                    register <USERNAME> <PASSWORD> <EMAIL> -- register a new user
+                    login <USERNAME> <PASSWORD> -- login an existing user
+                    quit -- end the program
+                    """;
+            case LOGGED_IN -> helpText = """
+                    help -- list possible commands
+                    logout -- logout the current user
+                    create <NAME> -- create a new game
+                    play <ID> [WHITE|BLACK] -- join a game
+                    observe <ID> -- observe a game
+                    list -- list all games
+                    """;
+            case IN_GAME -> helpText = """
+                    Coming Soon!
+                    """;
+            default -> helpText = "A strange error has occurred";
         }
         System.out.print(helpText);
     }
@@ -192,7 +200,119 @@ public class Main {
 
     private static void checkInputSize(int size, String[] args) throws Exception {
         if (args.length != size) {
-            throw new Exception("Please enter all necessary arguments");
+            throw new Exception("Please enter a valid command (Type 'help' for commands/arguments)");
         }
+    }
+
+    private static void drawBoard(String color, ChessBoard board) {
+        final String borderColor = SET_BG_COLOR_DARK_GREEN;
+        int start = 8;
+        int stop = 0;
+        int step = -1;
+        if (Objects.equals(color, "BLACK")) {
+            start = 1;
+            stop = 9;
+            step = 1;
+        }
+
+        StringBuilder boardString = new StringBuilder();
+
+        String topBottomRow = getTopBottomRow(color, borderColor);
+        boardString.append(topBottomRow);
+
+        for (int i = start; i != stop; i += step) {
+            boardString.append(borderColor).append(" ").append(i).append(" ");
+            for (int j = 1; j < 9; j++) {
+                var piece = board.getPiece(new ChessPosition(i, j));
+                boardString.append(getBGColor(i, j)).append(getPieceType(piece));
+            }
+            boardString.append(borderColor).append(" ").append(i).append(" ").append(RESET_BG_COLOR).append("\n");
+        }
+
+        boardString.append(topBottomRow);
+
+        System.out.println(boardString);
+    }
+
+    private static String getTopBottomRow(String color, String borderColor) {
+        ArrayList<String> rowChars = new ArrayList<>(List.of(" A ", " B ", " C ", " D ", " E ", " F ", " G ", " H "));
+        if (Objects.equals(color, "BLACK")) {
+            rowChars = new ArrayList<>(rowChars.reversed());
+        }
+
+        StringBuilder topBottomRow = new StringBuilder();
+        topBottomRow.append(borderColor).append(EMPTY);
+        for (var c : rowChars) {
+            topBottomRow.append(c);
+        }
+        topBottomRow.append(EMPTY + RESET_BG_COLOR + "\n");
+
+        return topBottomRow.toString();
+    }
+
+    private static String getBGColor(int i, int j) {
+        if ((i + j) % 2 == 0) {
+            return SET_BG_COLOR_DARK_GREY;
+        }
+        return SET_BG_COLOR_LIGHT_GREY;
+    }
+
+    private static String getPieceType(ChessPiece piece) {
+        if (piece == null) {
+            return EMPTY;
+        }
+
+        return switch (piece.getTeamColor()) {
+            case WHITE -> {
+                switch (piece.getPieceType()) {
+                    case KING -> {
+                        yield WHITE_KING;
+                    }
+                    case QUEEN -> {
+                        yield WHITE_QUEEN;
+                    }
+                    case BISHOP -> {
+                        yield WHITE_BISHOP;
+                    }
+                    case KNIGHT -> {
+                        yield WHITE_KNIGHT;
+                    }
+                    case ROOK -> {
+                        yield WHITE_ROOK;
+                    }
+                    case PAWN -> {
+                        yield WHITE_PAWN;
+                    }
+                    default -> {
+                        yield "";
+                    }
+                }
+            }
+            case BLACK -> {
+                switch (piece.getPieceType()) {
+                    case KING -> {
+                        yield BLACK_KING;
+                    }
+                    case QUEEN -> {
+                        yield BLACK_QUEEN;
+                    }
+                    case BISHOP -> {
+                        yield BLACK_BISHOP;
+                    }
+                    case KNIGHT -> {
+                        yield BLACK_KNIGHT;
+                    }
+                    case ROOK -> {
+                        yield BLACK_ROOK;
+                    }
+                    case PAWN -> {
+                        yield BLACK_PAWN;
+                    }
+                    default -> {
+                        yield "";
+                    }
+                }
+            }
+        };
     }
 }

@@ -112,7 +112,6 @@ public class ChessBoard {
         return pieceString;
     }
 
-
     public ChessPiece[][] getBoardCopy() {
         ChessPiece[][] newBoard = new ChessPiece[8][8];
 
@@ -155,7 +154,6 @@ public class ChessBoard {
     }
 
     public ChessPosition findKing(ChessGame.TeamColor color) {
-//        System.out.print(toString());
         int rowIndex = 1;
         for (var row : board) {
             int colIndex = 1;

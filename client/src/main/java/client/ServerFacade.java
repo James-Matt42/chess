@@ -31,11 +31,7 @@ public class ServerFacade {
         serverUrl = String.format("http://localhost:%d", port);
     }
 
-    public static void main(String[] args) throws Exception {
-
-    }
-
-    public void clear() throws Exception {
+    public void clear() {
         HttpRequest request = buildRequest("DELETE", "/db", null, null);
         sendRequest(request);
     }
@@ -79,7 +75,7 @@ public class ServerFacade {
         var mapType = new TypeToken<Map<String, ArrayList<GameData>>>() {
         }.getType();
 
-        var games_string = (Map<String, ArrayList<GameData>>) new Gson().fromJson(response.body(), mapType);
+        @SuppressWarnings("unchecked") var games_string = (Map<String, ArrayList<GameData>>) new Gson().fromJson(response.body(), mapType);
         return games_string.get("games");
     }
 
@@ -91,7 +87,7 @@ public class ServerFacade {
 
         var mapType = new TypeToken<Map<String, Integer>>() {
         }.getType();
-        var body = (Map<String, Integer>) new Gson().fromJson(response.body(), mapType);
+        @SuppressWarnings("unchecked") var body = (Map<String, Integer>) new Gson().fromJson(response.body(), mapType);
         return body.get("gameID");
     }
 
@@ -133,25 +129,12 @@ public class ServerFacade {
         }
     }
 
-    private HttpResponse<String> sendRequest(HttpRequest request) throws Exception {
+    private HttpResponse<String> sendRequest(HttpRequest request) {
         try {
             return client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private <T> T handleResponse(HttpResponse<String> response, Class<T> responseClass) throws Exception {
-        var status = response.statusCode();
-        if (!isSuccessful(status)) {
-            var body = response.body();
-            return null;
-        }
-
-        if (responseClass != null) {
-            return new Gson().fromJson(response.body(), responseClass);
-        }
-        return null;
     }
 
     private boolean isSuccessful(int status) {
