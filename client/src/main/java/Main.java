@@ -1,6 +1,5 @@
 import chess.*;
 import client.ServerFacade;
-import server.Server;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +19,7 @@ public class Main {
     public static void main(String[] args) {
         state = LOGGED_OUT;
 
-        Server server = new Server();
-        int port = server.run(8080);
-        ServerFacade facade = new ServerFacade(port);
+        ServerFacade facade = new ServerFacade(8080);
 
         System.out.println(WHITE_QUEEN + " 240 Chess Client: " + BLACK_QUEEN);
         Scanner scanner = new Scanner(System.in);
@@ -37,7 +34,6 @@ public class Main {
             }
             result = line;
         }
-        server.stop();
     }
 
     private static void processInput(ServerFacade facade, String input) throws Exception {
