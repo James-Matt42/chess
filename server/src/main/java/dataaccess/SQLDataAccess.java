@@ -112,7 +112,8 @@ public class SQLDataAccess implements DataAccess {
         var gameID = 0;
 
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("INSERT INTO games (gameName, gameString) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            try (var preparedStatement = conn.prepareStatement(
+                    "INSERT INTO games (gameName, gameString) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
                 preparedStatement.setString(1, gameName);
                 preparedStatement.setString(2, gameString);
                 preparedStatement.execute();
