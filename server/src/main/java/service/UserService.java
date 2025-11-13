@@ -10,7 +10,6 @@ import java.util.UUID;
 
 public class UserService {
     private final DataAccess dataAccess;
-    private int gameID = 0;
 
     public UserService(DataAccess dataAccess) {
         this.dataAccess = dataAccess;
@@ -84,10 +83,8 @@ public class UserService {
         }
 
         verifyAuth(authToken);
-        this.gameID++;
-        var game = new GameData(gameID, null, null, gameName, new ChessGame());
-        dataAccess.createGame(game);
-        return gameID;
+        var game = new GameData(0, null, null, gameName, new ChessGame());
+        return dataAccess.createGame(game);
     }
 
     public void joinGame(String authToken, String playerColor, int gameID)

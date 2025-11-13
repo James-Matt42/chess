@@ -11,7 +11,7 @@ public interface DataAccess {
 
     UserData getUser(String username) throws DataAccessException;
 
-    void createGame(GameData gameData) throws DataAccessException;
+    int createGame(GameData gameData) throws DataAccessException;
 
     GameData getGame(int gameID) throws DataAccessException;
 

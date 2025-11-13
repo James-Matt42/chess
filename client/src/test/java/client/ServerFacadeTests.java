@@ -1,4 +1,5 @@
-import client.ServerFacade;
+package client;
+
 import com.google.gson.Gson;
 import org.junit.jupiter.api.*;
 import server.Server;

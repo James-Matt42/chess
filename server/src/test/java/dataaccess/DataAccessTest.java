@@ -71,8 +71,8 @@ class DataAccessTest {
         db.clear();
         GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
         db.createGame(gameData);
-//        We can't use the same gameID twice
-        assertThrows(DataAccessException.class, () -> db.createGame(gameData));
+//        We can't have null as game name
+        assertThrows(DataAccessException.class, () -> db.createGame(new GameData(1, "Bob", null, null, new ChessGame())));
     }
 
     @Test

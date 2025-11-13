@@ -4,6 +4,7 @@ import chess.AuthData;
 import chess.GameData;
 import chess.UserData;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -33,12 +34,19 @@ public class MemoryDataAccess implements DataAccess {
     }
 
     @Override
-    public void createGame(GameData gameData) throws DataAccessException {
+    public int createGame(GameData gameData) throws DataAccessException {
+        int gameID;
+        if (games.isEmpty()) {
+            gameID = 1;
+        } else {
+            gameID = games.keySet().stream().max(Comparator.naturalOrder()).orElse(0) + 1;
+        }
         try {
-            games.put(gameData.gameID(), gameData);
+            games.put(gameID, gameData);
         } catch (Exception e) {
             throw new DataAccessException(e.getMessage());
         }
+        return gameID;
     }
 
     @Override

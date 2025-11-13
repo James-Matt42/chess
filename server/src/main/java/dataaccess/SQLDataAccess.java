@@ -6,7 +6,9 @@ import chess.GameData;
 import chess.UserData;
 import com.google.gson.Gson;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashSet;
 
 public class SQLDataAccess implements DataAccess {
@@ -51,7 +53,7 @@ public class SQLDataAccess implements DataAccess {
                 )""";
         var makeGameTable = """
                 CREATE TABLE IF NOT EXISTS games (
-                    gameID INT PRIMARY KEY NOT NULL,
+                    gameID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
                     gameName varchar(255) NOT NULL,
                     whiteUser varchar(50) DEFAULT NULL,
                     blackUser varchar(50) DEFAULT NULL,
@@ -100,20 +102,25 @@ public class SQLDataAccess implements DataAccess {
     }
 
     @Override
-    public void createGame(GameData gameData) throws DataAccessException {
+    public int createGame(GameData gameData) throws DataAccessException {
         var serializer = new Gson();
         var gameString = serializer.toJson(gameData.game());
-        var gameID = gameData.gameID();
         var gameName = gameData.gameName();
         var whiteUser = gameData.whiteUsername();
         var blackUser = gameData.blackUsername();
 
+        var gameID = 0;
+
         try (var conn = DatabaseManager.getConnection()) {
-            try (var preparedStatement = conn.prepareStatement("INSERT INTO games (gameID, gameName, gameString) VALUES (?, ?, ?)")) {
-                preparedStatement.setInt(1, gameID);
-                preparedStatement.setString(2, gameName);
-                preparedStatement.setString(3, gameString);
+            try (var preparedStatement = conn.prepareStatement("INSERT INTO games (gameName, gameString) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+                preparedStatement.setString(1, gameName);
+                preparedStatement.setString(2, gameString);
                 preparedStatement.execute();
+
+                ResultSet rs = preparedStatement.getGeneratedKeys();
+                if (rs.next()) {
+                    gameID = rs.getInt(1);
+                }
             }
             if (whiteUser != null && !whiteUser.isBlank()) {
                 try (var preparedStatement = conn.prepareStatement("UPDATE games SET whiteUser = ? WHERE gameID = ?;")) {
@@ -132,6 +139,7 @@ public class SQLDataAccess implements DataAccess {
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
+        return gameID;
     }
 
     @Override
