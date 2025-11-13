@@ -1,7 +1,6 @@
 import client.ServerFacade;
 import com.google.gson.Gson;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.Assertions.*;
 import server.Server;
 
 import java.net.URI;
@@ -16,7 +15,7 @@ public class ServerFacadeTests {
 
     private static Server server;
     static ServerFacade facade;
-    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final HttpClient CLIENT = HttpClient.newHttpClient();
 
     private static int port;
     private final String username = "Joe";
@@ -168,7 +167,7 @@ public class ServerFacadeTests {
 
     private static HttpResponse<String> sendRequest(HttpRequest request) {
         try {
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
+            return CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

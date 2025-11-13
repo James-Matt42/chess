@@ -199,13 +199,13 @@ public class Main {
     }
 
     private static void printPrompt() {
-        String state_string = switch (state) {
+        String stateString = switch (state) {
             case LOGGED_OUT -> "[LOGGED OUT]";
             case LOGGED_IN -> "[LOGGED IN]";
             case IN_GAME -> "[GAME]";
             default -> "[ERROR]";
         };
-        System.out.printf("%s >> ", state_string);
+        System.out.printf("%s >> ", stateString);
     }
 
     private static void checkInputSize(int size, String[] args) throws Exception {

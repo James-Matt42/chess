@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ServerFacade {
-    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final HttpClient CLIENT = HttpClient.newHttpClient();
     private final String serverUrl;
     private String authToken;
 
@@ -70,8 +70,8 @@ public class ServerFacade {
         var mapType = new TypeToken<Map<String, ArrayList<GameData>>>() {
         }.getType();
 
-        @SuppressWarnings("unchecked") var games_string = (Map<String, ArrayList<GameData>>) new Gson().fromJson(response.body(), mapType);
-        return games_string.get("games");
+        @SuppressWarnings("unchecked") var gamesString = (Map<String, ArrayList<GameData>>) new Gson().fromJson(response.body(), mapType);
+        return gamesString.get("games");
     }
 
     public int createGame(String gameName) throws Exception {
@@ -91,7 +91,8 @@ public class ServerFacade {
             throw new Exception("Color must be 'WHITE' or 'BLACK'");
         }
 
-        HttpRequest request = buildRequest("PUT", "/game", Map.of("playerColor", playerColor, "gameID", gameID), new String[]{"authorization", authToken});
+        HttpRequest request = buildRequest("PUT", "/game",
+                Map.of("playerColor", playerColor, "gameID", gameID), new String[]{"authorization", authToken});
         var response = sendRequest(request);
 
         throwIfException(response);
@@ -126,7 +127,7 @@ public class ServerFacade {
 
     private HttpResponse<String> sendRequest(HttpRequest request) {
         try {
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
+            return CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
