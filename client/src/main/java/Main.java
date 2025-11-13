@@ -1,10 +1,7 @@
 import chess.*;
 import client.ServerFacade;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 
 import static ui.EscapeSequences.*;
 
@@ -85,10 +82,10 @@ public class Main {
             throw new Exception("Game ID must be a number");
         }
 
-        var games = facade.listGames();
+        var gameIDs = getGames(facade);
         boolean found = false;
-        for (var game : games) {
-            if (game.gameID() == gameID) {
+        for (var id : gameIDs.keySet()) {
+            if (id == gameID) {
                 found = true;
                 break;
             }
@@ -115,11 +112,23 @@ public class Main {
             throw new Exception("Game ID must be a number");
         }
 
+        var gameIDs = getGames(facade);
+        boolean found = false;
+        for (var id : gameIDs.keySet()) {
+            if (id == gameIDInt) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new Exception("Game ID must be for an existing game");
+        }
+
         if (!color.equals("WHITE") && !color.equals("BLACK")) {
             throw new Exception("Color must be 'WHITE' or 'BLACK'");
         }
 
-        facade.joinGame(color, gameIDInt);
+        facade.joinGame(color, gameIDs.get(gameIDInt).gameID());
         state = IN_GAME;
 
         drawBoard(color, new ChessGame().getBoard());
@@ -127,8 +136,20 @@ public class Main {
 
     private static void listGames(ServerFacade facade) throws Exception {
         var games = facade.listGames();
-        for (var game : games) {
-            System.out.printf("Game: %s\tGame ID: %d%n", game.gameName(), game.gameID());
+        var gameMap = getGames(facade);
+        if (games.isEmpty()) {
+            System.out.println("No games. Create a game to get started!");
+        }
+        for (var game : gameMap.keySet()) {
+            String whiteUser = gameMap.get(game).whiteUsername();
+            String blackUser = gameMap.get(game).blackUsername();
+            if (whiteUser == null) {
+                whiteUser = "[OPEN]";
+            }
+            if (blackUser == null) {
+                blackUser = "[OPEN]";
+            }
+            System.out.printf("%d. Game: %s\t|\tGame ID: %d\t|\tWhite user: %s\t|\tBlack user: %s%n", game, gameMap.get(game).gameName(), game, whiteUser, blackUser);
         }
     }
 
@@ -138,7 +159,7 @@ public class Main {
         String gameName = args[1].strip();
 
         int gameID = facade.createGame(gameName);
-        System.out.printf("Game '%s' created successfully with game ID = %d%n", gameName, gameID);
+        System.out.printf("Game '%s' created successfully%n", gameName);
     }
 
     private static void logout(ServerFacade facade) throws Exception {
@@ -216,13 +237,21 @@ public class Main {
 
     private static void drawBoard(String color, ChessBoard board) {
         final String borderColor = SET_BG_COLOR_DARK_GREEN;
-        int start = 8;
-        int stop = 0;
-        int step = -1;
+        int colStart = 8;
+        int colStop = 0;
+        int colStep = -1;
+
+        int rowStart = 1;
+        int rowStop = 9;
+        int rowStep = 1;
         if (Objects.equals(color, "BLACK")) {
-            start = 1;
-            stop = 9;
-            step = 1;
+            colStart = 1;
+            colStop = 9;
+            colStep = 1;
+
+            rowStart = 8;
+            rowStop = 0;
+            rowStep = -1;
         }
 
         StringBuilder boardString = new StringBuilder();
@@ -230,9 +259,9 @@ public class Main {
         String topBottomRow = getTopBottomRow(color, borderColor);
         boardString.append(topBottomRow);
 
-        for (int i = start; i != stop; i += step) {
+        for (int i = colStart; i != colStop; i += colStep) {
             boardString.append(borderColor).append(" ").append(i).append(" ");
-            for (int j = 1; j < 9; j++) {
+            for (int j = rowStart; j != rowStop; j += rowStep) {
                 var piece = board.getPiece(new ChessPosition(i, j));
                 boardString.append(getBGColor(i, j)).append(getPieceType(piece));
             }
@@ -324,5 +353,14 @@ public class Main {
                 }
             }
         };
+    }
+
+    private static LinkedHashMap<Integer, GameData> getGames(ServerFacade facade) throws Exception {
+        var games = facade.listGames();
+        LinkedHashMap<Integer, GameData> gameMap = new LinkedHashMap<>();
+        for (int i = 0; i < games.size(); i++) {
+            gameMap.put(i + 1, games.get(i));
+        }
+        return gameMap;
     }
 }
