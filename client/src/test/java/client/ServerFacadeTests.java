@@ -46,7 +46,7 @@ public class ServerFacadeTests {
     }
 
     @Test
-    public void register() throws Exception {
+    public void register() {
         assertDoesNotThrow(() -> facade.register(username, password, email));
     }
 

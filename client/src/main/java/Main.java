@@ -82,6 +82,25 @@ public class Main {
     private static void observeGame(ServerFacade facade, String[] args) throws Exception {
         checkInputSize(2, args);
 
+        int gameID;
+        try {
+            gameID = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            throw new Exception("Game ID must be a number");
+        }
+
+        var games = facade.listGames();
+        boolean found = false;
+        for (var game : games) {
+            if (game.gameID() == gameID) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new Exception("Game ID must be for an existing game");
+        }
+
         drawBoard("WHITE", new ChessGame().getBoard());
 
         System.out.println("Observing will be possible in phase 6");
