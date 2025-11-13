@@ -18,9 +18,9 @@ public class ServerFacade {
     private final String serverUrl;
     private String authToken;
 
-    static final int LOGGED_OUT = 0;
-    static final int LOGGED_IN = 1;
-    static final int IN_GAME = 2;
+    public static final int LOGGED_OUT = 0;
+    public static final int LOGGED_IN = 1;
+    public static final int IN_GAME = 2;
 
     public ServerFacade(String serverUrl) {
         this.serverUrl = serverUrl;
@@ -29,11 +29,6 @@ public class ServerFacade {
 
     public ServerFacade(int port) {
         serverUrl = String.format("http://localhost:%d", port);
-    }
-
-    public void clear() {
-        HttpRequest request = buildRequest("DELETE", "/db", null, null);
-        sendRequest(request);
     }
 
     public int login(String username, String password) throws Exception {

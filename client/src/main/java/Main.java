@@ -23,11 +23,6 @@ public class Main {
         Server server = new Server();
         int port = server.run(8080);
         ServerFacade facade = new ServerFacade(port);
-        try {
-            facade.clear();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
         System.out.println(WHITE_QUEEN + " 240 Chess Client: " + BLACK_QUEEN);
         Scanner scanner = new Scanner(System.in);
