@@ -1,5 +1,8 @@
 import chess.*;
 import client.ServerFacade;
+import chess.ChessGame.TeamColor;
+import websocket.commands.MakeMoveCommand;
+import websocket.commands.UserGameCommand;
 
 import java.util.*;
 
@@ -10,6 +13,8 @@ public class Main {
 //    TODO: Keep the map of indexes -- game IDs locally and update it every time "list" is called
 
     private static int state;
+    private static TeamColor playerColor;
+    private static ChessBoard board;
 
     static final int LOGGED_OUT = 0;
     static final int LOGGED_IN = 1;
@@ -39,10 +44,6 @@ public class Main {
         String[] args = input.split(" ");
         String command = args[0];
 
-        if (command.equals("board")) {
-            drawBoard("WHITE", new ChessGame().getBoard());
-        }
-
         switch (state) {
             case LOGGED_OUT -> {
                 switch (command.toLowerCase()) {
@@ -69,9 +70,111 @@ public class Main {
                 } else {
                     System.out.println("Not yet developed, type 'quit' to quit");
                 }
+                switch (command.toLowerCase()) {
+                    case "move" -> makeMove(facade, args);
+                    case "redraw" -> drawBoard(board);
+                    case "resign" -> resignGame(facade);
+                    case "leave" -> leaveGame(facade);
+                    case "highlight" -> highlightMoves(args);
+                    default -> help();
+                }
             }
             default -> help();
         }
+    }
+
+    private static void makeMove(ServerFacade facade, String[] args) throws Exception {
+        checkInputSize(3, args);
+
+        var startPos = parsePosition(args[1]);
+        var endPos = parsePosition(args[2]);
+
+        var startPiece = board.getPiece(startPos);
+        if (startPiece == null) {
+            throw new Exception("You can only select an existing piece");
+        }
+        if (!playerColor.equals(startPiece.getTeamColor())) {
+            throw new Exception("You can only move a piece of your own color");
+        }
+
+        var possibleMoves = board.getColorMoves(playerColor);
+        validateMove(startPos, endPos, possibleMoves);
+        boolean promote = shouldPromote(possibleMoves);
+
+        ChessMove move;
+        if (promote) {
+            move = new ChessMove(startPos, endPos, getPromotionPiece());
+        } else {
+            move = new ChessMove(startPos, endPos, null);
+        }
+
+//        sendCommand(new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken));
+    }
+
+    private static void validateMove(ChessPosition startPos, ChessPosition endPos, Collection<ChessMove> moves) throws Exception {
+        for (var move : moves) {
+            if (startPos == move.getStartPosition() && endPos == move.getEndPosition()) {
+                return;
+            }
+        }
+
+        throw new Exception("Please enter a valid move");
+    }
+
+    private static ChessPiece.PieceType getPromotionPiece() {
+        System.out.print("""
+                Choose your promotion piece:
+                'Q' -> Queen
+                'K' -> Knight
+                'R' -> Rook
+                'B' -> Bishop
+                >> 
+                """);
+        Scanner scanner = new Scanner(System.in);
+        String piece = scanner.nextLine().toUpperCase();
+        ChessPiece.PieceType pieceType;
+        var validPieceTypes = List.of("Q", "K", "R", "B");
+
+        while (!validPieceTypes.contains(piece)) {
+            System.out.print("""
+                     Please enter a valid option.
+                     >> 
+                    """);
+            piece = scanner.nextLine().toUpperCase();
+        }
+        switch (piece) {
+            case "K" -> pieceType = ChessPiece.PieceType.KNIGHT;
+            case "R" -> pieceType = ChessPiece.PieceType.ROOK;
+            case "B" -> pieceType = ChessPiece.PieceType.BISHOP;
+            default -> pieceType = ChessPiece.PieceType.QUEEN;
+        }
+        return pieceType;
+    }
+
+    private static boolean shouldPromote(Collection<ChessMove> moves) {
+        for (var move : moves) {
+            if (move.getPromotionPiece() == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static ChessPosition parsePosition(String pos) {
+        return new ChessPosition(1, 1);
+    }
+
+    private static void highlightMoves(String[] args) {
+    }
+
+    private static void leaveGame(ServerFacade facade) {
+    }
+
+    private static void resignGame(ServerFacade facade) {
+    }
+
+    private static void sendCommand(ServerFacade facade, UserGameCommand command) throws Exception {
+//        Send the command to the server
     }
 
     private static void observeGame(ServerFacade facade, String[] args) throws Exception {
@@ -96,7 +199,8 @@ public class Main {
             throw new Exception("Game ID must be for an existing game");
         }
 
-        drawBoard("WHITE", new ChessGame().getBoard());
+        playerColor = TeamColor.WHITE;
+        drawBoard(new ChessGame().getBoard());
 
         System.out.println("Observing will be possible in phase 6");
     }
@@ -105,7 +209,7 @@ public class Main {
         checkInputSize(3, args);
 
         String gameID = args[1];
-        String color = args[2];
+        String color = args[2].toUpperCase();
 
         int gameIDInt;
         try {
@@ -132,8 +236,13 @@ public class Main {
 
         facade.joinGame(color, gameIDs.get(gameIDInt).gameID());
         state = IN_GAME;
+        if (color.equals("WHITE")) {
+            playerColor = TeamColor.WHITE;
+        } else {
+            playerColor = TeamColor.BLACK;
+        }
 
-        drawBoard(color, new ChessGame().getBoard());
+        drawBoard(new ChessGame().getBoard());
     }
 
     private static void listGames(ServerFacade facade) throws Exception {
@@ -242,7 +351,7 @@ public class Main {
         }
     }
 
-    private static void drawBoard(String color, ChessBoard board) {
+    private static void drawBoard(ChessBoard board) {
         final String borderColor = SET_BG_COLOR_DARK_GREEN;
         int colStart = 8;
         int colStop = 0;
@@ -251,7 +360,7 @@ public class Main {
         int rowStart = 1;
         int rowStop = 9;
         int rowStep = 1;
-        if (Objects.equals(color, "BLACK")) {
+        if (Objects.equals(playerColor, TeamColor.BLACK)) {
             colStart = 1;
             colStop = 9;
             colStep = 1;
@@ -263,7 +372,7 @@ public class Main {
 
         StringBuilder boardString = new StringBuilder();
 
-        String topBottomRow = getTopBottomRow(color, borderColor);
+        String topBottomRow = getTopBottomRow(borderColor);
         boardString.append(topBottomRow);
 
         for (int i = colStart; i != colStop; i += colStep) {
@@ -280,9 +389,9 @@ public class Main {
         System.out.println(boardString);
     }
 
-    private static String getTopBottomRow(String color, String borderColor) {
+    private static String getTopBottomRow(String borderColor) {
         ArrayList<String> rowChars = new ArrayList<>(List.of(" A ", " B ", " C ", " D ", " E ", " F ", " G ", " H "));
-        if (Objects.equals(color, "BLACK")) {
+        if (Objects.equals(playerColor, TeamColor.BLACK)) {
             rowChars = new ArrayList<>(rowChars.reversed());
         }
 
