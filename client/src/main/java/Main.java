@@ -7,6 +7,8 @@ import static ui.EscapeSequences.*;
 
 public class Main {
 
+//    TODO: Keep the map of indexes -- game IDs locally and update it every time "list" is called
+
     private static int state;
 
     static final int LOGGED_OUT = 0;
@@ -212,7 +214,12 @@ public class Main {
                     list -- list all games
                     """;
             case IN_GAME -> helpText = """
-                    Coming Soon!
+                    help -- list possible commands
+                    redraw -- redraw the current chess board
+                    leave -- immediately leave the game
+                    move <a-h><1-8> <a-h><1-8> -- make a move (e.g. move e2 e4)
+                    resign -- forfeit the game
+                    highlight <a-h><1-8> -- highlight the possible moves of a piece
                     """;
             default -> helpText = "A strange error has occurred";
         }
