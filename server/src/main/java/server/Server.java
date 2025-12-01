@@ -9,6 +9,8 @@ import dataaccess.MemoryDataAccess;
 import dataaccess.SQLDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
+import io.javalin.websocket.WsContext;
+import io.javalin.websocket.WsMessageContext;
 import service.AlreadyTakenException;
 import service.BadRequestException;
 import service.InvalidAuthException;
@@ -31,6 +33,8 @@ public class Server {
         }
         server = Javalin.create(config -> config.staticFiles.add("web"));
 
+        var wsHandler = new WsRequestHandler();
+
 //        Clear database
         server.delete("db", this::clear);
 //        Register a user
@@ -45,6 +49,16 @@ public class Server {
         server.post("game", this::createGame);
 //        Join a game
         server.put("game", this::joinGame);
+//        Websocket request
+        server.ws("/ws", ws -> {
+            ws.onConnect(wsHandler);
+            ws.onMessage(wsHandler);
+            ws.onClose(wsHandler);
+        });
+    }
+
+    private String handleWsMessage(WsMessageContext ctx) {
+        return "Hey";
     }
 
     public int run(int desiredPort) {

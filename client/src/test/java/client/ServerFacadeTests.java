@@ -24,11 +24,11 @@ public class ServerFacadeTests {
     private final String email = "j@j.com";
 
     @BeforeAll
-    public static void init() {
+    public static void init() throws Exception {
         server = new Server();
         port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
-        facade = new ServerFacade(String.format("http://localhost:%d", port));
+        facade = new ServerFacade(port);
 
         HttpRequest request = buildRequest("DELETE", "/db", null, null);
         sendRequest(request);

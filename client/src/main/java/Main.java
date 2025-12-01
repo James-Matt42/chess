@@ -10,17 +10,17 @@ import static ui.EscapeSequences.*;
 
 public class Main {
 
-//    TODO: Keep the map of indexes -- game IDs locally and update it every time "list" is called
-
     private static int state;
     private static TeamColor playerColor;
     private static ChessBoard board;
+    static LinkedHashMap<Integer, GameData> gameMap;
+    private static int currGameID;
 
     static final int LOGGED_OUT = 0;
     static final int LOGGED_IN = 1;
     static final int IN_GAME = 2;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         state = LOGGED_OUT;
 
         ServerFacade facade = new ServerFacade(8080);
@@ -107,8 +107,8 @@ public class Main {
         } else {
             move = new ChessMove(startPos, endPos, null);
         }
-
-//        sendCommand(new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken));
+        
+        facade.makeMove(move, currGameID);
     }
 
     private static void validateMove(ChessPosition startPos, ChessPosition endPos, Collection<ChessMove> moves) throws Exception {
@@ -187,9 +187,8 @@ public class Main {
             throw new Exception("Game ID must be a number");
         }
 
-        var gameIDs = getGames(facade);
         boolean found = false;
-        for (var id : gameIDs.keySet()) {
+        for (var id : gameMap.keySet()) {
             if (id == gameID) {
                 found = true;
                 break;
@@ -218,9 +217,8 @@ public class Main {
             throw new Exception("Game ID must be a number");
         }
 
-        var gameIDs = getGames(facade);
         boolean found = false;
-        for (var id : gameIDs.keySet()) {
+        for (var id : gameMap.keySet()) {
             if (id == gameIDInt) {
                 found = true;
                 break;
@@ -234,7 +232,8 @@ public class Main {
             throw new Exception("Color must be 'WHITE' or 'BLACK'");
         }
 
-        facade.joinGame(color, gameIDs.get(gameIDInt).gameID());
+        currGameID = gameMap.get(gameIDInt).gameID();
+        facade.joinGame(color, gameMap.get(gameIDInt).gameID());
         state = IN_GAME;
         if (color.equals("WHITE")) {
             playerColor = TeamColor.WHITE;
@@ -246,9 +245,8 @@ public class Main {
     }
 
     private static void listGames(ServerFacade facade) throws Exception {
-        var games = facade.listGames();
-        var gameMap = getGames(facade);
-        if (games.isEmpty()) {
+        getGames(facade);
+        if (gameMap.isEmpty()) {
             System.out.println("No games. Create a game to get started!");
         }
         for (var game : gameMap.keySet()) {
@@ -471,12 +469,11 @@ public class Main {
         };
     }
 
-    private static LinkedHashMap<Integer, GameData> getGames(ServerFacade facade) throws Exception {
+    private static void getGames(ServerFacade facade) throws Exception {
         var games = facade.listGames();
-        LinkedHashMap<Integer, GameData> gameMap = new LinkedHashMap<>();
+        gameMap = new LinkedHashMap<>();
         for (int i = 0; i < games.size(); i++) {
             gameMap.put(i + 1, games.get(i));
         }
-        return gameMap;
     }
 }

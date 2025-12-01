@@ -1,10 +1,16 @@
 package client;
 
 import chess.AuthData;
+import chess.ChessMove;
 import chess.GameData;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import jakarta.websocket.Session;
+import org.glassfish.tyrus.client.*;
+import websocket.commands.MakeMoveCommand;
+import websocket.commands.UserGameCommand;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -17,18 +23,16 @@ public class ServerFacade {
     private static final HttpClient CLIENT = HttpClient.newHttpClient();
     private final String serverUrl;
     private String authToken;
+    private final int port;
+    private static WsClient wsClient = null;
 
     public static final int LOGGED_OUT = 0;
     public static final int LOGGED_IN = 1;
     public static final int IN_GAME = 2;
 
-    public ServerFacade(String serverUrl) {
-        this.serverUrl = serverUrl;
-        authToken = "";
-    }
-
-    public ServerFacade(int port) {
+    public ServerFacade(int port) throws Exception {
         serverUrl = String.format("http://localhost:%d", port);
+        this.port = port;
     }
 
     public int login(String username, String password) throws Exception {
@@ -96,6 +100,19 @@ public class ServerFacade {
         var response = sendRequest(request);
 
         throwIfException(response);
+
+        startWebsocket();
+    }
+
+    public void makeMove(ChessMove move, int gameID) throws IOException {
+        var command = new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken, gameID, move);
+        String message = new Gson().toJson(command);
+
+        wsClient.send(message);
+    }
+
+    private void startWebsocket() throws Exception {
+        wsClient = new WsClient(port);
     }
 
     private void throwIfException(HttpResponse<String> response) throws Exception {
