@@ -1,13 +1,16 @@
 package server;
 
+import com.google.gson.Gson;
 import io.javalin.websocket.*;
 import org.jetbrains.annotations.NotNull;
+import websocket.commands.UserGameCommand;
 
 public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsCloseHandler {
 
     @Override
     public void handleConnect(@NotNull WsConnectContext ctx) throws Exception {
         ctx.enableAutomaticPings();
+        ctx.send("This is a test");
         System.out.println("Websocket connected!");
     }
 
@@ -22,6 +25,9 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
 
     private String parseMessage(WsMessageContext ctx) {
-        return "";
+//        Determine what kind of message is being sent
+        var message = ctx.message();
+        var command = new Gson().fromJson(message, UserGameCommand.class);
+        return "Another test";
     }
 }

@@ -111,6 +111,13 @@ public class ServerFacade {
         wsClient.send(message);
     }
 
+    public void leaveGame(int gameID) throws IOException {
+        var command = new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, gameID);
+        String message = new Gson().toJson(command);
+
+        wsClient.send(message);
+    }
+
     private void startWebsocket() throws Exception {
         wsClient = new WsClient(port);
     }

@@ -15,7 +15,11 @@ public class WsClient extends Endpoint {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         session = container.connectToServer(this, uri);
 
-        this.session.addMessageHandler((MessageHandler.Whole<String>) System.out::println);
+        this.session.addMessageHandler(new MessageHandler.Whole<String>() {
+            public void onMessage(String message) {
+                System.out.println(message);
+            }
+        });
     }
 
     public void send(String message) throws IOException {

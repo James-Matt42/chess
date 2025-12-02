@@ -4,6 +4,7 @@ import chess.ChessGame.TeamColor;
 import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
 
+import java.io.IOException;
 import java.util.*;
 
 import static ui.EscapeSequences.*;
@@ -65,11 +66,6 @@ public class Main {
                 }
             }
             case IN_GAME -> {
-                if (command.equalsIgnoreCase("quit")) {
-                    state = LOGGED_IN;
-                } else {
-                    System.out.println("Not yet developed, type 'quit' to quit");
-                }
                 switch (command.toLowerCase()) {
                     case "move" -> makeMove(facade, args);
                     case "redraw" -> drawBoard(board);
@@ -107,7 +103,7 @@ public class Main {
         } else {
             move = new ChessMove(startPos, endPos, null);
         }
-        
+
         facade.makeMove(move, currGameID);
     }
 
@@ -167,7 +163,8 @@ public class Main {
     private static void highlightMoves(String[] args) {
     }
 
-    private static void leaveGame(ServerFacade facade) {
+    private static void leaveGame(ServerFacade facade) throws IOException {
+        facade.leaveGame(currGameID);
     }
 
     private static void resignGame(ServerFacade facade) {
