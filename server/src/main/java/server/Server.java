@@ -33,7 +33,7 @@ public class Server {
         }
         server = Javalin.create(config -> config.staticFiles.add("web"));
 
-        var wsHandler = new WsRequestHandler();
+        var wsHandler = new WsRequestHandler(userService);
 
 //        Clear database
         server.delete("db", this::clear);

@@ -5,7 +5,6 @@ import chess.ChessMove;
 import chess.GameData;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import jakarta.websocket.Session;
 import org.glassfish.tyrus.client.*;
 import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
@@ -25,6 +24,7 @@ public class ServerFacade {
     private String authToken;
     private final int port;
     private static WsClient wsClient = null;
+    private static String username;
 
     public static final int LOGGED_OUT = 0;
     public static final int LOGGED_IN = 1;
@@ -43,6 +43,7 @@ public class ServerFacade {
 
         var authData = new Gson().fromJson(response.body(), AuthData.class);
         authToken = authData.authToken();
+        this.username = username;
         return LOGGED_IN;
     }
 
@@ -52,6 +53,7 @@ public class ServerFacade {
 
         throwIfException(response);
 
+        username = null;
         authToken = "";
     }
 
@@ -62,6 +64,7 @@ public class ServerFacade {
         throwIfException(response);
 
         var authData = new Gson().fromJson(response.body(), AuthData.class);
+        this.username = username;
         authToken = authData.authToken();
     }
 
@@ -105,21 +108,22 @@ public class ServerFacade {
     }
 
     public void makeMove(ChessMove move, int gameID) throws IOException {
-        var command = new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken, gameID, move);
+        var command = new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken, gameID, username, move);
         String message = new Gson().toJson(command);
 
         wsClient.send(message);
     }
 
     public void leaveGame(int gameID) throws IOException {
-        var command = new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, gameID);
+        var command = new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, gameID, username);
         String message = new Gson().toJson(command);
 
         wsClient.send(message);
+        wsClient.close();
     }
 
     private void startWebsocket() throws Exception {
-        wsClient = new WsClient(port);
+        wsClient = new WsClient(port, username);
     }
 
     private void throwIfException(HttpResponse<String> response) throws Exception {

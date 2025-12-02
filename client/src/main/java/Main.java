@@ -330,7 +330,7 @@ public class Main {
         System.out.print(helpText);
     }
 
-    private static void printPrompt() {
+    public static void printPrompt() {
         String stateString = switch (state) {
             case LOGGED_OUT -> "[LOGGED OUT]";
             case LOGGED_IN -> "[LOGGED IN]";
