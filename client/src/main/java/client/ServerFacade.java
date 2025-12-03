@@ -1,8 +1,6 @@
 package client;
 
-import chess.AuthData;
-import chess.ChessMove;
-import chess.GameData;
+import chess.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.glassfish.tyrus.client.*;
@@ -43,7 +41,7 @@ public class ServerFacade {
 
         var authData = new Gson().fromJson(response.body(), AuthData.class);
         authToken = authData.authToken();
-        this.username = username;
+        ServerFacade.username = username;
         return LOGGED_IN;
     }
 
@@ -64,7 +62,7 @@ public class ServerFacade {
         throwIfException(response);
 
         var authData = new Gson().fromJson(response.body(), AuthData.class);
-        this.username = username;
+        ServerFacade.username = username;
         authToken = authData.authToken();
     }
 
@@ -94,7 +92,12 @@ public class ServerFacade {
     }
 
     public void joinGame(String playerColor, int gameID) throws Exception {
-        if (!playerColor.equals("WHITE") && !playerColor.equals("BLACK")) {
+        ChessGame.TeamColor color;
+        if (playerColor.equals("WHITE")) {
+            color = ChessGame.TeamColor.WHITE;
+        } else if (playerColor.equals("BLACK")) {
+            color = ChessGame.TeamColor.BLACK;
+        } else {
             throw new Exception("Color must be 'WHITE' or 'BLACK'");
         }
 
@@ -104,7 +107,7 @@ public class ServerFacade {
 
         throwIfException(response);
 
-        startWebsocket();
+        startWebsocket(gameID, color);
     }
 
     public void makeMove(ChessMove move, int gameID) throws IOException {
@@ -122,8 +125,17 @@ public class ServerFacade {
         wsClient.close();
     }
 
-    private void startWebsocket() throws Exception {
-        wsClient = new WsClient(port, username);
+    public ChessBoard getBoard() {
+        return wsClient.getBoard();
+    }
+
+    private void startWebsocket(int gameID, ChessGame.TeamColor playerColor) throws Exception {
+//        Create websocket connection
+        wsClient = new WsClient(port, username, playerColor);
+//        Send connect request that then gives the server access to the username and gameID
+        var message = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID, username);
+        var command = new Gson().toJson(message);
+        wsClient.send(command);
     }
 
     private void throwIfException(HttpResponse<String> response) throws Exception {

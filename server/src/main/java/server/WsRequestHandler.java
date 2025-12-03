@@ -7,6 +7,8 @@ import org.jetbrains.annotations.NotNull;
 import service.UserService;
 import websocket.commands.MakeMoveCommand;
 import websocket.commands.UserGameCommand;
+import websocket.messages.LoadBoardMessage;
+import websocket.messages.ServerMessage;
 
 import java.util.HashMap;
 
@@ -23,28 +25,43 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     public void handleConnect(@NotNull WsConnectContext ctx) throws Exception {
         ctx.enableAutomaticPings();
         System.out.println("Websocket connected!");
-        ctx.send("Some user joined the game");
     }
 
     @Override
     public void handleMessage(@NotNull WsMessageContext ctx) throws Exception {
         var message = ctx.message();
         var map = new Gson().fromJson(message, HashMap.class);
-        UserGameCommand command;
-        if (map.containsKey("MAKE_MOVE")) {
-            command = new Gson().fromJson(message, MakeMoveCommand.class);
+        if (map.get("commandType").equals("MAKE_MOVE")) {
+            MakeMoveCommand command = new Gson().fromJson(message, MakeMoveCommand.class);
+//            Try to make the move. If fails, send a descriptive error to the client
+            try {
+                userService.makeMove(command);
+            } catch (Exception e) {
+                var error = new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage());
+                ctx.send(new Gson().toJson(error));
+            }
         } else {
-            command = new Gson().fromJson(message, UserGameCommand.class);
-        }
-        switch (command.getCommandType()) {
-            case MAKE_MOVE -> {
-            }
-            case LEAVE -> {
-                ctx.send(command.getUsername() + " left the game");
-                ctx.closeSession();
-            }
-            case RESIGN -> {
-                ctx.send(command.getUsername() + " has resigned");
+            UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
+            switch (command.getCommandType()) {
+                case CONNECT -> {
+                    var notification = new Gson().toJson(new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                            command.getUsername() + " joined the game!"));
+                    ctx.send(notification);
+//                Send board to just the user
+                    var gameData = userService.getGame(command.getAuthToken(), command.getGameID());
+                    var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
+                    var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
+                    ctx.send(loadBoardMessageJson);
+                }
+                case LEAVE -> {
+                    var notification = new Gson().toJson(new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                            command.getUsername() + " left the game"));
+                    ctx.send(notification);
+                    ctx.closeSession();
+                }
+                case RESIGN -> {
+                    ctx.send(command.getUsername() + " has resigned");
+                }
             }
         }
     }

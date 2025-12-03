@@ -4,6 +4,7 @@ import chess.*;
 import dataaccess.DataAccess;
 import dataaccess.DataAccessException;
 import org.mindrot.jbcrypt.BCrypt;
+import websocket.commands.MakeMoveCommand;
 
 import java.util.HashSet;
 import java.util.UUID;
@@ -119,6 +120,22 @@ public class UserService {
         }
     }
 
+    public GameData getGame(String authToken, int gameID) throws Exception {
+        var authData = verifyAuth(authToken);
+        var gameData = dataAccess.getGame(gameID);
+
+        if (gameData == null) {
+            throw new BadRequestException("bad request");
+        }
+
+//        Validate that the authData username matches one of the usernames from the game
+        if (!(authData.username().equals(gameData.whiteUsername()) || authData.username().equals(gameData.blackUsername()))) {
+            throw new InvalidAuthException("unauthorized");
+        }
+
+        return gameData;
+    }
+
     private AuthData verifyAuth(String authToken) throws InvalidAuthException, DataAccessException {
         if (authToken == null || authToken.isBlank()) {
             throw new InvalidAuthException("unauthorized");
@@ -142,5 +159,25 @@ public class UserService {
 
     public static String generateAuthToken() {
         return UUID.randomUUID().toString();
+    }
+
+    public void makeMove(MakeMoveCommand command) throws Exception {
+        GameData gameData = dataAccess.getGame(command.getGameID());
+        ChessGame game = gameData.game();
+
+//        Make sure that the player is authorized
+        var playerTurn = game.getTeamTurn();
+        String player;
+        if (playerTurn.equals(ChessGame.TeamColor.WHITE)) {
+            player = gameData.whiteUsername();
+        } else {
+            player = gameData.blackUsername();
+        }
+        var user = command.getUsername();
+        if (user.equals(player)) {
+            throw new Exception("You are not authorized to make that move");
+        }
+
+        game.makeMove(command.getMove());
     }
 }

@@ -1,4 +1,5 @@
 import chess.*;
+import client.DrawBoard;
 import client.ServerFacade;
 import chess.ChessGame.TeamColor;
 import websocket.commands.MakeMoveCommand;
@@ -14,6 +15,7 @@ public class Main {
     private static int state;
     private static TeamColor playerColor;
     private static ChessBoard board;
+    private static DrawBoard drawBoard;
     static LinkedHashMap<Integer, GameData> gameMap;
     private static int currGameID;
 
@@ -68,7 +70,7 @@ public class Main {
             case IN_GAME -> {
                 switch (command.toLowerCase()) {
                     case "move" -> makeMove(facade, args);
-                    case "redraw" -> drawBoard(board);
+                    case "redraw" -> drawBoard(facade);
                     case "resign" -> resignGame(facade);
                     case "leave" -> leaveGame(facade);
                     case "highlight" -> highlightMoves(args);
@@ -85,6 +87,10 @@ public class Main {
         var startPos = parsePosition(args[1]);
         var endPos = parsePosition(args[2]);
 
+        var board = facade.getBoard();
+        if (board == null) {
+            throw new Exception("The board has not yet arrived... Please wait");
+        }
         var startPiece = board.getPiece(startPos);
         if (startPiece == null) {
             throw new Exception("You can only select an existing piece");
@@ -109,7 +115,7 @@ public class Main {
 
     private static void validateMove(ChessPosition startPos, ChessPosition endPos, Collection<ChessMove> moves) throws Exception {
         for (var move : moves) {
-            if (startPos == move.getStartPosition() && endPos == move.getEndPosition()) {
+            if (startPos.equals(move.getStartPosition()) && endPos.equals(move.getEndPosition())) {
                 return;
             }
         }
@@ -156,8 +162,32 @@ public class Main {
         return true;
     }
 
-    private static ChessPosition parsePosition(String pos) {
-        return new ChessPosition(1, 1);
+    private static ChessPosition parsePosition(String pos) throws Exception {
+        var moveException = new Exception("Please enter a valid move");
+
+//        Check the length
+        if (pos.length() != 2) {
+            throw moveException;
+        }
+
+//        Parse col value
+        int col;
+        try {
+            char colChar = pos.toLowerCase().charAt(0);
+            col = colChar - 96;
+        } catch (Exception e) {
+            throw moveException;
+        }
+
+//        Parse row value
+        int row;
+        try {
+            row = Integer.parseInt(pos.substring(1));
+        } catch (Exception e) {
+            throw moveException;
+        }
+
+        return new ChessPosition(row, col);
     }
 
     private static void highlightMoves(String[] args) {
@@ -165,6 +195,7 @@ public class Main {
 
     private static void leaveGame(ServerFacade facade) throws IOException {
         facade.leaveGame(currGameID);
+        state = LOGGED_IN;
     }
 
     private static void resignGame(ServerFacade facade) {
@@ -196,7 +227,7 @@ public class Main {
         }
 
         playerColor = TeamColor.WHITE;
-        drawBoard(new ChessGame().getBoard());
+//        drawBoard(new ChessGame().getBoard());
 
         System.out.println("Observing will be possible in phase 6");
     }
@@ -237,8 +268,6 @@ public class Main {
         } else {
             playerColor = TeamColor.BLACK;
         }
-
-        drawBoard(new ChessGame().getBoard());
     }
 
     private static void listGames(ServerFacade facade) throws Exception {
@@ -346,124 +375,8 @@ public class Main {
         }
     }
 
-    private static void drawBoard(ChessBoard board) {
-        final String borderColor = SET_BG_COLOR_DARK_GREEN;
-        int colStart = 8;
-        int colStop = 0;
-        int colStep = -1;
-
-        int rowStart = 1;
-        int rowStop = 9;
-        int rowStep = 1;
-        if (Objects.equals(playerColor, TeamColor.BLACK)) {
-            colStart = 1;
-            colStop = 9;
-            colStep = 1;
-
-            rowStart = 8;
-            rowStop = 0;
-            rowStep = -1;
-        }
-
-        StringBuilder boardString = new StringBuilder();
-
-        String topBottomRow = getTopBottomRow(borderColor);
-        boardString.append(topBottomRow);
-
-        for (int i = colStart; i != colStop; i += colStep) {
-            boardString.append(borderColor).append(" ").append(i).append(" ");
-            for (int j = rowStart; j != rowStop; j += rowStep) {
-                var piece = board.getPiece(new ChessPosition(i, j));
-                boardString.append(getBGColor(i, j)).append(getPieceType(piece));
-            }
-            boardString.append(borderColor).append(" ").append(i).append(" ").append(RESET_BG_COLOR).append("\n");
-        }
-
-        boardString.append(topBottomRow);
-
-        System.out.println(boardString);
-    }
-
-    private static String getTopBottomRow(String borderColor) {
-        ArrayList<String> rowChars = new ArrayList<>(List.of(" A ", " B ", " C ", " D ", " E ", " F ", " G ", " H "));
-        if (Objects.equals(playerColor, TeamColor.BLACK)) {
-            rowChars = new ArrayList<>(rowChars.reversed());
-        }
-
-        StringBuilder topBottomRow = new StringBuilder();
-        topBottomRow.append(borderColor).append(EMPTY);
-        for (var c : rowChars) {
-            topBottomRow.append(c);
-        }
-        topBottomRow.append(EMPTY + RESET_BG_COLOR + "\n");
-
-        return topBottomRow.toString();
-    }
-
-    private static String getBGColor(int i, int j) {
-        if ((i + j) % 2 == 0) {
-            return SET_BG_COLOR_DARK_GREY;
-        }
-        return SET_BG_COLOR_LIGHT_GREY;
-    }
-
-    private static String getPieceType(ChessPiece piece) {
-        if (piece == null) {
-            return EMPTY;
-        }
-
-        return switch (piece.getTeamColor()) {
-            case WHITE -> {
-                switch (piece.getPieceType()) {
-                    case KING -> {
-                        yield WHITE_KING;
-                    }
-                    case QUEEN -> {
-                        yield WHITE_QUEEN;
-                    }
-                    case BISHOP -> {
-                        yield WHITE_BISHOP;
-                    }
-                    case KNIGHT -> {
-                        yield WHITE_KNIGHT;
-                    }
-                    case ROOK -> {
-                        yield WHITE_ROOK;
-                    }
-                    case PAWN -> {
-                        yield WHITE_PAWN;
-                    }
-                    default -> {
-                        yield "";
-                    }
-                }
-            }
-            case BLACK -> {
-                switch (piece.getPieceType()) {
-                    case KING -> {
-                        yield BLACK_KING;
-                    }
-                    case QUEEN -> {
-                        yield BLACK_QUEEN;
-                    }
-                    case BISHOP -> {
-                        yield BLACK_BISHOP;
-                    }
-                    case KNIGHT -> {
-                        yield BLACK_KNIGHT;
-                    }
-                    case ROOK -> {
-                        yield BLACK_ROOK;
-                    }
-                    case PAWN -> {
-                        yield BLACK_PAWN;
-                    }
-                    default -> {
-                        yield "";
-                    }
-                }
-            }
-        };
+    private static void drawBoard(ServerFacade facade) {
+        DrawBoard.drawBoard(facade.getBoard(), playerColor);
     }
 
     private static void getGames(ServerFacade facade) throws Exception {
