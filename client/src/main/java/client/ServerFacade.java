@@ -120,7 +120,7 @@ public class ServerFacade {
     }
 
     public void leaveGame(int gameID) throws IOException {
-        var command = new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, gameID, username);
+        var command = new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, gameID);
         String message = new Gson().toJson(command);
 
         wsClient.send(message);

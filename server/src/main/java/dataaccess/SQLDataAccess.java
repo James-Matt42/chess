@@ -56,7 +56,9 @@ public class SQLDataAccess implements DataAccess {
                     gameID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
                     gameName varchar(255) NOT NULL,
                     whiteUser varchar(50) DEFAULT NULL,
+                    whiteAuthToken VARCHAR(255) DEFAULT NULL,
                     blackUser varchar(50) DEFAULT NULL,
+                    blackAuthToken VARCHAR(255) DEFAULT NULL,
                     gameString LONGTEXT NOT NULL
                 )""";
         var makeAuthTable = """
@@ -107,7 +109,9 @@ public class SQLDataAccess implements DataAccess {
         var gameString = serializer.toJson(gameData.game());
         var gameName = gameData.gameName();
         var whiteUser = gameData.whiteUsername();
+        var whiteAuthToken = gameData.whiteAuthToken();
         var blackUser = gameData.blackUsername();
+        var blackAuthToken = gameData.blackAuthToken();
 
         var gameID = 0;
 
@@ -124,16 +128,18 @@ public class SQLDataAccess implements DataAccess {
                 }
             }
             if (whiteUser != null && !whiteUser.isBlank()) {
-                try (var preparedStatement = conn.prepareStatement("UPDATE games SET whiteUser = ? WHERE gameID = ?;")) {
+                try (var preparedStatement = conn.prepareStatement("UPDATE games SET whiteUser = ?, whiteAuthToken = ? WHERE gameID = ?;")) {
                     preparedStatement.setString(1, whiteUser);
-                    preparedStatement.setInt(2, gameID);
+                    preparedStatement.setString(2, whiteAuthToken);
+                    preparedStatement.setInt(3, gameID);
                     preparedStatement.execute();
                 }
             }
             if (blackUser != null && !blackUser.isBlank()) {
-                try (var preparedStatement = conn.prepareStatement("UPDATE games SET blackUser = ? WHERE gameID = ?;")) {
+                try (var preparedStatement = conn.prepareStatement("UPDATE games SET blackUser = ?, blackAuthToken = ? WHERE gameID = ?;")) {
                     preparedStatement.setString(1, blackUser);
-                    preparedStatement.setInt(2, gameID);
+                    preparedStatement.setString(2, blackAuthToken);
+                    preparedStatement.setInt(3, gameID);
                     preparedStatement.execute();
                 }
             }
@@ -152,11 +158,13 @@ public class SQLDataAccess implements DataAccess {
                 if (rs.next()) {
                     String gameName = rs.getString(2);
                     String whiteUser = rs.getString(3);
-                    String blackUser = rs.getString(4);
-                    String gameString = rs.getString(5);
+                    String whiteAuthToken = rs.getString(4);
+                    String blackUser = rs.getString(5);
+                    String blackAuthToken = rs.getString(6);
+                    String gameString = rs.getString(7);
                     ChessGame game = new Gson().fromJson(gameString, ChessGame.class);
 
-                    return new GameData(gameID, whiteUser, blackUser, gameName, game);
+                    return new GameData(gameID, whiteUser, whiteAuthToken, blackUser, blackAuthToken, gameName, game);
                 }
                 return null;
             }
@@ -176,11 +184,13 @@ public class SQLDataAccess implements DataAccess {
                     int gameID = rs.getInt(1);
                     String gameName = rs.getString(2);
                     String whiteUser = rs.getString(3);
-                    String blackUser = rs.getString(4);
-                    String gameString = rs.getString(5);
+                    String whiteAuthToken = rs.getString(4);
+                    String blackUser = rs.getString(5);
+                    String blackAuthToken = rs.getString(6);
+                    String gameString = rs.getString(7);
                     ChessGame game = new Gson().fromJson(gameString, ChessGame.class);
 
-                    games.add(new GameData(gameID, whiteUser, blackUser, gameName, game));
+                    games.add(new GameData(gameID, whiteUser, whiteAuthToken, blackUser, blackAuthToken, gameName, game));
                 }
                 return games;
             }
@@ -191,21 +201,26 @@ public class SQLDataAccess implements DataAccess {
 
     @Override
     public void updateGame(int gameID, GameData gameData) throws DataAccessException {
-        String statement = "UPDATE games SET gameID=?, gameName=?, whiteUser=?, blackUser=?, gameString=? WHERE gameID = ?;";
+        String statement = "UPDATE games SET gameID=?, gameName=?, whiteUser=?, whiteAuthToken = ?, " +
+                "blackUser=?, blackAuthToken = ?, gameString=? WHERE gameID = ?;";
         try (var conn = DatabaseManager.getConnection()) {
             try (var preparedStatement = conn.prepareStatement(statement)) {
                 int newGameID = gameData.gameID();
                 String newGameName = gameData.gameName();
                 String newWhiteUser = gameData.whiteUsername();
+                String newWhiteAuthToken = gameData.whiteAuthToken();
                 String newBlackUser = gameData.blackUsername();
+                String newBlackAuthToken = gameData.blackAuthToken();
                 String newGame = new Gson().toJson(gameData.game());
 
                 preparedStatement.setInt(1, newGameID);
                 preparedStatement.setString(2, newGameName);
                 preparedStatement.setString(3, newWhiteUser);
-                preparedStatement.setString(4, newBlackUser);
-                preparedStatement.setString(5, newGame);
-                preparedStatement.setInt(6, gameID);
+                preparedStatement.setString(4, newWhiteAuthToken);
+                preparedStatement.setString(5, newBlackUser);
+                preparedStatement.setString(6, newBlackAuthToken);
+                preparedStatement.setString(7, newGame);
+                preparedStatement.setInt(8, gameID);
 
                 preparedStatement.execute();
             }

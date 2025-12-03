@@ -181,4 +181,15 @@ public class UserService {
         game.makeMove(command.getMove());
         dataAccess.updateGame(gameData.gameID(), new GameData(gameData.gameID(), gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game));
     }
+
+    public String getUser(String authToken) throws Exception {
+        var authDatas = dataAccess.getAuth(authToken);
+
+        for (var authData : authDatas) {
+            if (authData.authToken().equals(authToken)) {
+                return authData.username();
+            }
+        }
+        throw new Exception("unauthorized");
+    }
 }
