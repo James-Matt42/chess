@@ -1,8 +1,10 @@
 package server;
 
+import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPosition;
 import com.google.gson.Gson;
 import io.javalin.websocket.*;
-import org.eclipse.jetty.server.Authentication;
 import org.jetbrains.annotations.NotNull;
 import service.UserService;
 import websocket.commands.ConnectCommand;
@@ -12,10 +14,8 @@ import websocket.commands.UserGameCommand;
 import websocket.messages.LoadBoardMessage;
 import websocket.messages.ServerMessage;
 
-import java.net.http.WebSocket;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 
 public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsCloseHandler {
 
@@ -83,7 +83,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             }
         }
 
-        var connection = new UserConnection(ctx.sessionId(), ctx.session, command.getParticipationType());
+        var connection = new UserConnection(ctx, command.getParticipationType());
         if (users.containsKey(command.getGameID())) {
             users.get(command.getGameID()).add(connection);
         } else {
@@ -98,22 +98,49 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
                 command.getUsername() + " joined the game as " + command.getParticipationType().toString() + "!"));
         for (var con : connections) {
             if (!con.equals(connection)) {
-                new WsMessageContext(con.sessionId(), con.session(), "").send(notification);
+                con.ctx().send(notification);
             }
         }
     }
 
-    private void makeMove(WsMessageContext ctx) {
+    private void makeMove(WsMessageContext ctx) throws Exception {
         var message = ctx.message();
         MakeMoveCommand command = new Gson().fromJson(message, MakeMoveCommand.class);
 //            Try to make the move. If fails, send a descriptive error to the client
         try {
             userService.makeMove(command);
-            sendBoard(ctx, command);
         } catch (Exception e) {
             var error = new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage());
             ctx.send(new Gson().toJson(error));
         }
+
+        var gameData = userService.getGame(command.getAuthToken(), command.getGameID());
+        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
+        var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
+
+        var color = gameData.game().getTeamTurn() == ChessGame.TeamColor.WHITE ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+        var moveNotification = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                color + " " + reversParseMove(command.getMove()).toUpperCase());
+
+        var connections = users.get(command.getGameID());
+        for (var con : connections) {
+//            Send the updated board to everyone
+            con.ctx().send(loadBoardMessageJson);
+//            Send the notification about the move to everyone else
+            if (!con.ctx().session.equals(ctx.session)) {
+                con.ctx().send(moveNotification);
+            }
+        }
+    }
+
+    private String reversParseMove(ChessMove move) {
+        return reverseParsePosition(move.getStartPosition()) + " " + reverseParsePosition(move.getEndPosition());
+    }
+
+    private String reverseParsePosition(ChessPosition position) {
+        char col = (char) (position.getColumn() + 96);
+        char row = (char) (position.getRow() + '0');
+        return new String(new char[]{col, row});
     }
 
     private void sendBoard(WsMessageContext ctx, UserGameCommand command) throws Exception {
