@@ -4,7 +4,9 @@ import chess.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.glassfish.tyrus.client.*;
+import websocket.commands.ConnectCommand;
 import websocket.commands.MakeMoveCommand;
+import websocket.commands.ParticipationType;
 import websocket.commands.UserGameCommand;
 
 import java.io.IOException;
@@ -133,7 +135,16 @@ public class ServerFacade {
 //        Create websocket connection
         wsClient = new WsClient(port, username, playerColor);
 //        Send connect request that then gives the server access to the username and gameID
-        var message = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID, username);
+        ParticipationType participationType;
+        if (playerColor.equals(ChessGame.TeamColor.WHITE)) {
+            participationType = ParticipationType.WHITE;
+        } else if (playerColor.equals(ChessGame.TeamColor.BLACK)) {
+            participationType = ParticipationType.BLACK;
+        } else {
+            participationType = ParticipationType.OBSERVER;
+        }
+
+        var message = new ConnectCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID, username, participationType);
         var command = new Gson().toJson(message);
         wsClient.send(command);
     }

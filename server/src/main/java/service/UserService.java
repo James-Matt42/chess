@@ -174,10 +174,11 @@ public class UserService {
             player = gameData.blackUsername();
         }
         var user = command.getUsername();
-        if (user.equals(player)) {
+        if (!user.equals(player)) {
             throw new Exception("You are not authorized to make that move");
         }
 
         game.makeMove(command.getMove());
+        dataAccess.updateGame(gameData.gameID(), new GameData(gameData.gameID(), gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game));
     }
 }
