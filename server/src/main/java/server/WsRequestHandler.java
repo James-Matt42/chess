@@ -269,7 +269,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             ctx.send(new Gson().toJson(error));
             return;
         }
-        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
+        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game());
         var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
 
         var color = gameData.game().getTeamTurn() == ChessGame.TeamColor.WHITE ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
@@ -324,14 +324,14 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     private void sendBoard(WsMessageContext ctx, UserGameCommand command) throws Exception {
         var gameData = userService.getGame(command.getGameID());
-        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
+        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game());
         var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
         ctx.send(loadBoardMessageJson);
     }
 
     private void sendBoard(WsMessageContext ctx, MakeMoveCommand command) throws Exception {
         var gameData = userService.getGame(command.getAuthToken(), command.getGameID());
-        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
+        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game());
         var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
         ctx.send(loadBoardMessageJson);
     }

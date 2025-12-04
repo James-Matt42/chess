@@ -47,6 +47,24 @@ public class ChessGame {
         resigned = true;
     }
 
+    public Collection<ChessMove> getColorMoves(TeamColor playerColor) {
+        var validMoves = new ArrayList<ChessMove>();
+        for (int row = 1; row < 9; row++) {
+            for (int col = 1; col < 9; col++) {
+                var pos = new ChessPosition(row, col);
+                var piece = board.getPiece(pos);
+                if (piece == null) {
+                    continue;
+                }
+                if (piece.getTeamColor().equals(playerColor)) {
+                    var pieceMoves = validMoves(pos);
+                    validMoves.addAll(pieceMoves);
+                }
+            }
+        }
+        return validMoves;
+    }
+
     /**
      * Enum identifying the 2 possible teams in a chess game
      */
@@ -64,7 +82,6 @@ public class ChessGame {
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
 //         Also make sure to add en passant and castling
-//        System.out.println(board);
         var piece = board.getPiece(startPosition);
         if (piece == null) {
             return null;

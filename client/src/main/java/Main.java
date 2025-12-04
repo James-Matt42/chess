@@ -101,7 +101,7 @@ public class Main {
             throw new Exception("You can only move a piece of your own color");
         }
 
-        var possibleMoves = board.getColorMoves(playerColor);
+        var possibleMoves = facade.getGame().getColorMoves(playerColor);
         validateMove(startPos, endPos, possibleMoves);
         boolean promote = shouldPromote(possibleMoves);
 
@@ -122,7 +122,7 @@ public class Main {
             }
         }
 
-        throw new Exception("Please enter a valid move");
+        throw new Exception("Error: Invalid position(s)");
     }
 
     private static ChessPiece.PieceType getPromotionPiece() {
@@ -132,8 +132,7 @@ public class Main {
                 'K' -> Knight
                 'R' -> Rook
                 'B' -> Bishop
-                >> 
-                """);
+                >>\s""");
         Scanner scanner = new Scanner(System.in);
         String piece = scanner.nextLine().toUpperCase();
         ChessPiece.PieceType pieceType;
@@ -141,9 +140,8 @@ public class Main {
 
         while (!validPieceTypes.contains(piece)) {
             System.out.print("""
-                     Please enter a valid option.
-                     >> 
-                    """);
+                    Please enter a valid option.
+                    >>\s""");
             piece = scanner.nextLine().toUpperCase();
         }
         switch (piece) {
@@ -157,11 +155,11 @@ public class Main {
 
     private static boolean shouldPromote(Collection<ChessMove> moves) {
         for (var move : moves) {
-            if (move.getPromotionPiece() == null) {
-                return false;
+            if (move.getPromotionPiece() != null) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     private static ChessPosition parsePosition(String pos) throws Exception {
@@ -200,7 +198,14 @@ public class Main {
         var board = facade.getBoard();
         Collection<ChessMove> moves;
         try {
-            moves = board.getPiece(pos).pieceMoves(board, pos);
+            var color = board.getPiece(pos).getTeamColor();
+            var colorMoves = facade.getGame().getColorMoves(color);
+            moves = new ArrayList<>();
+            for (var move : colorMoves) {
+                if (pos.getRow() == move.getStartPosition().getRow() && pos.getColumn() == move.getStartPosition().getColumn()) {
+                    moves.add(move);
+                }
+            }
         } catch (Exception e) {
             throw new Exception("Please select an existing piece");
         }

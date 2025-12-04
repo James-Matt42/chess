@@ -20,7 +20,7 @@ public class WsClient extends Endpoint {
     public Session session;
     private final String username;
     private ChessGame.TeamColor playerColor;
-    private ChessBoard board;
+    private ChessGame game;
 
     public WsClient(int port, String username, ChessGame.TeamColor teamColor) throws Exception {
         this.username = username;
@@ -54,9 +54,9 @@ public class WsClient extends Endpoint {
         HashMap<String, String> map = new Gson().fromJson(message, HashMap.class);
         if (map.get("serverMessageType").equals("LOAD_GAME")) {
             LoadBoardMessage loadBoardMessage = gson.fromJson(message, LoadBoardMessage.class);
-            this.board = loadBoardMessage.getGame();
+            this.game = loadBoardMessage.getGame();
             System.out.println("\n");
-            DrawBoard.drawBoard(board, playerColor);
+            DrawBoard.drawBoard(game.getBoard(), playerColor);
             System.out.print("[GAME] >> ");
         } else if (map.get("serverMessageType").equals("NOTIFICATION")) {
             ServerNotificationMessage command = gson.fromJson(message, ServerNotificationMessage.class);
@@ -67,7 +67,7 @@ public class WsClient extends Endpoint {
         }
     }
 
-    public ChessBoard getBoard() {
-        return board;
+    public ChessGame getGame() {
+        return game;
     }
 }

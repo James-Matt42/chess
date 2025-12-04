@@ -139,7 +139,11 @@ public class ServerFacade {
     }
 
     public ChessBoard getBoard() {
-        return wsClient.getBoard();
+        return wsClient.getGame().getBoard();
+    }
+
+    public ChessGame getGame() {
+        return wsClient.getGame();
     }
 
     private void startWebsocket(int gameID, ChessGame.TeamColor playerColor) throws Exception {
