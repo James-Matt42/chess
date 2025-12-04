@@ -60,7 +60,7 @@ class DataAccessTest {
     void createGame() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
 //        Successfully create game without throwing an error
         db.createGame(gameData);
     }
@@ -69,20 +69,20 @@ class DataAccessTest {
     void createGameFails() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
         db.createGame(gameData);
 //        We can't have null as game name
-        assertThrows(DataAccessException.class, () -> db.createGame(new GameData(1, "Bob", null, null, new ChessGame())));
+        assertThrows(DataAccessException.class, () -> db.createGame(new GameData(1, "Bob", null, null, null, null, new ChessGame())));
     }
 
     @Test
     void getGame() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
         db.createGame(gameData);
         assertEquals(gameData, db.getGame(1));
-        GameData gameData2 = new GameData(2, null, "Bob", "MyGame2", new ChessGame());
+        GameData gameData2 = new GameData(2, null, null, "Bob", null, "MyGame2", new ChessGame());
         db.createGame(gameData2);
         assertEquals(gameData2, db.getGame(2));
     }
@@ -91,7 +91,7 @@ class DataAccessTest {
     void getGameFails() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
         db.createGame(gameData);
         assertNull(db.getGame(42));
     }
@@ -101,9 +101,9 @@ class DataAccessTest {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
 
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
         db.createGame(gameData);
-        GameData gameData2 = new GameData(2, null, "joe", "Game2", new ChessGame());
+        GameData gameData2 = new GameData(2, null, null, "joe", null, "Game2", new ChessGame());
         db.createGame(gameData2);
 
         var games = db.listGames();
@@ -127,9 +127,9 @@ class DataAccessTest {
     void updateGame() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
         db.createGame(gameData);
-        GameData gameData2 = new GameData(2, null, "Bob", "MyGame2", new ChessGame());
+        GameData gameData2 = new GameData(2, null, null, "Bob", null, "MyGame2", new ChessGame());
 
         db.updateGame(1, gameData2);
 
@@ -142,9 +142,9 @@ class DataAccessTest {
     void updateGameFails() throws DataAccessException {
         SQLDataAccess db = new SQLDataAccess();
         db.clear();
-        GameData gameData = new GameData(1, "Bob", null, "MyGame", new ChessGame());
+        GameData gameData = new GameData(1, "Bob", null, null, null, "MyGame", new ChessGame());
         db.createGame(gameData);
-        GameData gameData2 = new GameData(2, null, "Bob", "MyGame2", new ChessGame());
+        GameData gameData2 = new GameData(2, null, null, "Bob", null, "MyGame2", new ChessGame());
         db.createGame(gameData2);
 
 //        Try and make two copies of the same game through updateGame()

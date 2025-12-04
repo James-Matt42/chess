@@ -112,8 +112,12 @@ public class ServerFacade {
         startWebsocket(gameID, color);
     }
 
+    public void observeGame(int gameID) throws Exception {
+        startWebsocket(gameID, null);
+    }
+
     public void makeMove(ChessMove move, int gameID) throws IOException {
-        var command = new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken, gameID, username, move);
+        var command = new MakeMoveCommand(UserGameCommand.CommandType.MAKE_MOVE, authToken, gameID, move);
         String message = new Gson().toJson(command);
 
         wsClient.send(message);
@@ -127,6 +131,13 @@ public class ServerFacade {
         wsClient.close();
     }
 
+    public void resignGame(int gameID) throws IOException {
+        var command = new UserGameCommand(UserGameCommand.CommandType.RESIGN, authToken, gameID);
+        String message = new Gson().toJson(command);
+
+        wsClient.send(message);
+    }
+
     public ChessBoard getBoard() {
         return wsClient.getBoard();
     }
@@ -135,16 +146,17 @@ public class ServerFacade {
 //        Create websocket connection
         wsClient = new WsClient(port, username, playerColor);
 //        Send connect request that then gives the server access to the username and gameID
-        ParticipationType participationType;
-        if (playerColor.equals(ChessGame.TeamColor.WHITE)) {
-            participationType = ParticipationType.WHITE;
-        } else if (playerColor.equals(ChessGame.TeamColor.BLACK)) {
-            participationType = ParticipationType.BLACK;
-        } else {
-            participationType = ParticipationType.OBSERVER;
-        }
+//        ParticipationType participationType;
+//        if (playerColor.equals(ChessGame.TeamColor.WHITE)) {
+//            participationType = ParticipationType.WHITE;
+//        } else if (playerColor.equals(ChessGame.TeamColor.BLACK)) {
+//            participationType = ParticipationType.BLACK;
+//        } else {
+//            participationType = ParticipationType.OBSERVER;
+//        }
 
-        var message = new ConnectCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID, username, participationType);
+//        var message = new ConnectCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID, username, participationType);
+        var message = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID);
         var command = new Gson().toJson(message);
         wsClient.send(command);
     }

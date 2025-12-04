@@ -6,11 +6,14 @@ import chess.ChessPosition;
 import com.google.gson.Gson;
 import jakarta.websocket.*;
 import websocket.messages.LoadBoardMessage;
+import websocket.messages.ServerErrorMessage;
 import websocket.messages.ServerMessage;
+import websocket.messages.ServerNotificationMessage;
 
 import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 
 public class WsClient extends Endpoint {
 
@@ -47,21 +50,20 @@ public class WsClient extends Endpoint {
 
     private void parseMessage(String message) {
         var gson = new Gson();
-        ServerMessage command = gson.fromJson(message, ServerMessage.class);
-        if (command.getServerMessageType() == ServerMessage.ServerMessageType.LOAD_GAME) {
+//        ServerMessage command = gson.fromJson(message, ServerMessage.class);
+        HashMap<String, String> map = new Gson().fromJson(message, HashMap.class);
+        if (map.get("serverMessageType").equals("LOAD_GAME")) {
             LoadBoardMessage loadBoardMessage = gson.fromJson(message, LoadBoardMessage.class);
             this.board = loadBoardMessage.getGame();
             System.out.println("\n");
             DrawBoard.drawBoard(board, playerColor);
             System.out.print("[GAME] >> ");
-        } else {
-            String messageType;
-            if (command.getServerMessageType() == ServerMessage.ServerMessageType.NOTIFICATION) {
-                messageType = "Notification";
-            } else {
-                messageType = "Error";
-            }
-            System.out.print("\n" + messageType + ": " + command.getMessage() + "\n[GAME] >> ");
+        } else if (map.get("serverMessageType").equals("NOTIFICATION")) {
+            ServerNotificationMessage command = gson.fromJson(message, ServerNotificationMessage.class);
+            System.out.print("\n" + command.getMessage() + "\n[GAME] >> ");
+        } else if (map.get("serverMessageType").equals("ERROR")) {
+            ServerErrorMessage command = gson.fromJson(message, ServerErrorMessage.class);
+            System.out.print("\n" + command.getErrorMessage() + "\n[GAME] >> ");
         }
     }
 

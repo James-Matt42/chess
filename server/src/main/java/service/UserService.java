@@ -84,7 +84,7 @@ public class UserService {
         }
 
         verifyAuth(authToken);
-        var game = new GameData(0, null, null, gameName, new ChessGame());
+        var game = new GameData(0, null, null, null, null, gameName, new ChessGame());
         return dataAccess.createGame(game);
     }
 
@@ -101,8 +101,8 @@ public class UserService {
             throw new BadRequestException("bad request");
         } else if (playerColor.equals("WHITE")) {
             if (gameData.whiteUsername() == null || gameData.whiteUsername().isEmpty()) {
-                var newGameData = new GameData(gameData.gameID(), authData.username(),
-                        gameData.blackUsername(), gameData.gameName(), gameData.game());
+                var newGameData = new GameData(gameData.gameID(), authData.username(), authData.authToken(),
+                        gameData.blackUsername(), gameData.blackAuthToken(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);
             } else {
                 throw new AlreadyTakenException("already taken");
@@ -110,7 +110,8 @@ public class UserService {
         } else if (playerColor.equals("BLACK")) {
             if (gameData.blackUsername() == null || gameData.blackUsername().isEmpty()) {
                 var newGameData = new GameData(gameData.gameID(),
-                        gameData.whiteUsername(), authData.username(), gameData.gameName(), gameData.game());
+                        gameData.whiteUsername(), gameData.whiteAuthToken(),
+                        authData.username(), authData.authToken(), gameData.gameName(), gameData.game());
                 dataAccess.updateGame(gameID, newGameData);
             } else {
                 throw new AlreadyTakenException("already taken");
@@ -131,6 +132,17 @@ public class UserService {
 //        Validate that the authData username matches one of the usernames from the game
         if (!(authData.username().equals(gameData.whiteUsername()) || authData.username().equals(gameData.blackUsername()))) {
             throw new InvalidAuthException("unauthorized");
+        }
+
+        return gameData;
+    }
+
+    //    For getting the game for observers
+    public GameData getGame(int gameID) throws Exception {
+        var gameData = dataAccess.getGame(gameID);
+
+        if (gameData == null) {
+            throw new BadRequestException("bad request");
         }
 
         return gameData;
@@ -173,13 +185,17 @@ public class UserService {
         } else {
             player = gameData.blackUsername();
         }
-        var user = command.getUsername();
+        var user = getUser(command.getAuthToken());
+        if (user == null) {
+            throw new Exception("User not found");
+        }
         if (!user.equals(player)) {
             throw new Exception("You are not authorized to make that move");
         }
 
         game.makeMove(command.getMove());
-        dataAccess.updateGame(gameData.gameID(), new GameData(gameData.gameID(), gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game));
+        dataAccess.updateGame(gameData.gameID(), new GameData(gameData.gameID(), gameData.whiteUsername(), gameData.whiteAuthToken(),
+                gameData.blackUsername(), gameData.blackAuthToken(), gameData.gameName(), game));
     }
 
     public String getUser(String authToken) throws Exception {
@@ -191,5 +207,19 @@ public class UserService {
             }
         }
         throw new Exception("unauthorized");
+    }
+
+    public void removeUserFromGame(String authToken, int gameID) throws Exception {
+        var game = getGame(gameID);
+        if (game == null) {
+            return;
+        }
+        if (game.whiteAuthToken() != null && game.whiteAuthToken().equals(authToken)) {
+            dataAccess.updateGame(gameID, new GameData(gameID, null, null,
+                    game.blackUsername(), game.blackAuthToken(), game.gameName(), game.game()));
+        } else if (game.blackAuthToken() != null && game.blackAuthToken().equals(authToken)) {
+            dataAccess.updateGame(gameID, new GameData(gameID, game.whiteUsername(), game.whiteAuthToken(),
+                    null, null, game.gameName(), game.game()));
+        }
     }
 }

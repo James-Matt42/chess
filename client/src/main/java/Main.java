@@ -18,6 +18,7 @@ public class Main {
     private static DrawBoard drawBoard;
     static LinkedHashMap<Integer, GameData> gameMap;
     private static int currGameID;
+    private static boolean observer;
 
     static final int LOGGED_OUT = 0;
     static final int LOGGED_IN = 1;
@@ -82,6 +83,9 @@ public class Main {
     }
 
     private static void makeMove(ServerFacade facade, String[] args) throws Exception {
+        if (observer) {
+            throw new Exception("You cannot move as an observer");
+        }
         checkInputSize(3, args);
 
         var startPos = parsePosition(args[1]);
@@ -198,7 +202,8 @@ public class Main {
         state = LOGGED_IN;
     }
 
-    private static void resignGame(ServerFacade facade) {
+    private static void resignGame(ServerFacade facade) throws IOException {
+        facade.resignGame(currGameID);
     }
 
     private static void sendCommand(ServerFacade facade, UserGameCommand command) throws Exception {
@@ -227,9 +232,10 @@ public class Main {
         }
 
         playerColor = TeamColor.WHITE;
-//        drawBoard(new ChessGame().getBoard());
-
-        System.out.println("Observing will be possible in phase 6");
+        currGameID = gameMap.get(gameID).gameID();
+        facade.observeGame(gameID);
+        state = IN_GAME;
+        observer = true;
     }
 
     private static void playGame(ServerFacade facade, String[] args) throws Exception {
@@ -261,13 +267,14 @@ public class Main {
         }
 
         currGameID = gameMap.get(gameIDInt).gameID();
-        facade.joinGame(color, gameMap.get(gameIDInt).gameID());
+        facade.joinGame(color, currGameID);
         state = IN_GAME;
         if (color.equals("WHITE")) {
             playerColor = TeamColor.WHITE;
         } else {
             playerColor = TeamColor.BLACK;
         }
+        observer = false;
     }
 
     private static void listGames(ServerFacade facade) throws Exception {

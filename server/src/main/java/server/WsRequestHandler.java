@@ -10,7 +10,9 @@ import websocket.commands.MakeMoveCommand;
 import websocket.commands.ParticipationType;
 import websocket.commands.UserGameCommand;
 import websocket.messages.LoadBoardMessage;
+import websocket.messages.ServerErrorMessage;
 import websocket.messages.ServerMessage;
+import websocket.messages.ServerNotificationMessage;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,10 +21,12 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     private final UserService userService;
     private final HashMap<Integer, HashSet<UserConnection>> users;
+    private final HashSet<Integer> endedGames;
 
     public WsRequestHandler(UserService userService) {
         this.userService = userService;
         this.users = new HashMap<>();
+        this.endedGames = new HashSet<>();
     }
 
     @Override
@@ -38,21 +42,56 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         if (map.get("commandType").equals("MAKE_MOVE")) {
             makeMove(ctx);
         } else if (map.get("commandType").equals("CONNECT")) {
-            connect(ctx, map);
-        } else {
-            UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
-            switch (command.getCommandType()) {
-                case LEAVE -> {
-//                    var notification = new Gson().toJson(new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
-//                            command.getUsername() + " left the game"));
-//                    ctx.send(notification);
-                    ctx.closeSession();
-                }
-                case RESIGN -> {
-//                    ctx.send(command.getUsername() + " has resigned");
-                }
+            try {
+                connect(ctx, map);
+            } catch (Exception e) {
+                var error = new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage());
+                ctx.send(new Gson().toJson(error));
+            }
+        } else if (map.get("commandType").equals("LEAVE")) {
+            leave(ctx);
+        } else if (map.get("commandType").equals("RESIGN")) {
+            resign(ctx);
+        }
+    }
+
+    private void resign(WsMessageContext ctx) throws Exception {
+        var message = ctx.message();
+        UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
+        var connections = users.get(command.getGameID());
+        String user = userService.getUser(command.getAuthToken());
+        endedGames.add(command.getGameID());
+        var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                user + " resigned"));
+        for (var con : connections) {
+            try {
+                con.ctx().send(notification);
+            } catch (Exception e) {
+                connections.remove(con);
             }
         }
+    }
+
+    private void leave(WsMessageContext ctx) throws Exception {
+        ctx.closeSession();
+//        Remove ctx from gameMap
+        var message = ctx.message();
+        UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
+        var connections = users.get(command.getGameID());
+
+        var user = userService.getUser(command.getAuthToken());
+        var notification = new Gson().toJson(new ServerNotificationMessage
+                (ServerMessage.ServerMessageType.NOTIFICATION, user + " left the game"));
+        for (var con : connections) {
+            if (con.ctx().equals(ctx)) {
+                connections.remove(con);
+            } else {
+                con.ctx().send(notification);
+            }
+        }
+
+//        Remove user from color in game
+        userService.removeUserFromGame(command.getAuthToken(), command.getGameID());
     }
 
     @Override
@@ -68,61 +107,75 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         if (map.size() == 3) {
             UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
             String user = userService.getUser(command.getAuthToken());
-            var game = userService.getGame(command.getAuthToken(), command.getGameID());
-            if (game == null) {
-                throw new Exception("Requested game doesn't exist");
+            GameData game;
+            try {
+                game = userService.getGame(command.getGameID());
+            } catch (Exception e) {
+                throw new Exception("Error: Requested game doesn't exist");
             }
+
             var observe = true;
-            if (user.equals(game.whiteUsername())) {
+            ParticipationType participationType = null;
+            if (command.getAuthToken().equals(game.whiteAuthToken())) {
                 observe = false;
                 addUserToMap(ctx, ParticipationType.WHITE, command);
-            }
-            if (user.equals(game.blackUsername())) {
+                participationType = ParticipationType.WHITE;
+            } else if (command.getAuthToken().equals(game.blackAuthToken())) {
                 observe = false;
                 addUserToMap(ctx, ParticipationType.BLACK, command);
+                participationType = ParticipationType.BLACK;
             }
             if (observe) {
+                participationType = ParticipationType.OBSERVER;
                 addUserToMap(ctx, ParticipationType.OBSERVER, command);
             }
             sendBoard(ctx, command);
 
+            var connection = new UserConnection(ctx, participationType);
             var connections = users.get(command.getGameID());
-            var notification = new Gson().toJson(new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+            var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
                     user + " joined the game as " + participationType + "!"));
+            for (var con : connections) {
+                if (!con.equals(connection)) {
+//                    Try to send a message. If the connection was closed without a leave message,
+//                    we simply remove the connection from our map
+                    try {
+                        con.ctx().send(notification);
+                    } catch (Exception e) {
+                        connections.remove(con);
+                    }
+                }
+            }
+        } else {
+
+            ConnectCommand command = new Gson().fromJson(message, ConnectCommand.class);
+
+//            Verify that the user is authorized to play white or black
+//            Otherwise, the player is an observer, which is fine
+            var game = userService.getGame(command.getAuthToken(), command.getGameID());
+            if (game == null) {
+                throw new Exception("Requested game doesn't exist");
+            }
+            ParticipationType participationType = getParticipationType(command, game);
+
+
+            var connection = new UserConnection(ctx, participationType);
+            if (users.containsKey(command.getGameID())) {
+                users.get(command.getGameID()).add(connection);
+            } else {
+                users.put(command.getGameID(), new HashSet<>());
+                users.get(command.getGameID()).add(connection);
+            }
+
+            sendBoard(ctx, command);
+
+            var connections = users.get(command.getGameID());
+            var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                    command.getUsername() + " joined the game as " + participationType.toString() + "!"));
             for (var con : connections) {
                 if (!con.equals(connection)) {
                     con.ctx().send(notification);
                 }
-            }
-        }
-
-        ConnectCommand command = new Gson().fromJson(message, ConnectCommand.class);
-
-//            Verify that the user is authorized to play white or black
-//            Otherwise, the player is an observer, which is fine
-        var game = userService.getGame(command.getAuthToken(), command.getGameID());
-        if (game == null) {
-            throw new Exception("Requested game doesn't exist");
-        }
-        ParticipationType participationType = getParticipationType(command, game);
-
-
-        var connection = new UserConnection(ctx, participationType);
-        if (users.containsKey(command.getGameID())) {
-            users.get(command.getGameID()).add(connection);
-        } else {
-            users.put(command.getGameID(), new HashSet<>());
-            users.get(command.getGameID()).add(connection);
-        }
-
-        sendBoard(ctx, command);
-
-        var connections = users.get(command.getGameID());
-        var notification = new Gson().toJson(new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
-                command.getUsername() + " joined the game as " + participationType.toString() + "!"));
-        for (var con : connections) {
-            if (!con.equals(connection)) {
-                con.ctx().send(notification);
             }
         }
     }
@@ -163,20 +216,33 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     private void makeMove(WsMessageContext ctx) throws Exception {
         var message = ctx.message();
         MakeMoveCommand command = new Gson().fromJson(message, MakeMoveCommand.class);
+        if (endedGames.contains(command.getGameID())) {
+            var error = new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: No moves can be made after the game is ended");
+            ctx.send(new Gson().toJson(error));
+            return;
+        }
 //            Try to make the move. If fails, send a descriptive error to the client
         try {
             userService.makeMove(command);
         } catch (Exception e) {
-            var error = new ServerMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage());
+            var error = new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage());
             ctx.send(new Gson().toJson(error));
+            return;
         }
 
-        var gameData = userService.getGame(command.getAuthToken(), command.getGameID());
+        GameData gameData = null;
+        try {
+            gameData = userService.getGame(command.getAuthToken(), command.getGameID());
+        } catch (Exception e) {
+            var error = new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: You are unauthorized to make that move");
+            ctx.send(new Gson().toJson(error));
+            return;
+        }
         var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
         var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
 
         var color = gameData.game().getTeamTurn() == ChessGame.TeamColor.WHITE ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
-        var moveNotification = new ServerMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+        var moveNotification = new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
                 color + " " + reversParseMove(command.getMove()).toUpperCase());
 
         var connections = users.get(command.getGameID());
@@ -188,6 +254,34 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
                 con.ctx().send(moveNotification);
             }
         }
+
+//        Send message if check, checkmate, or stalemate
+        var endGameNotification = specialGameNotification(gameData);
+        if (endGameNotification == null) {
+            return;
+        }
+        for (var con : connections) {
+            con.ctx().send(new Gson().toJson(endGameNotification));
+        }
+    }
+
+    private ServerNotificationMessage specialGameNotification(GameData gameData) {
+        var game = gameData.game();
+        if (game.isInCheckmate(ChessGame.TeamColor.WHITE)) {
+            endedGames.add(gameData.gameID());
+            return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "WHITE is in checkmate!");
+        } else if (game.isInCheckmate(ChessGame.TeamColor.BLACK)) {
+            endedGames.add(gameData.gameID());
+            return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "BLACK is in checkmate!");
+        } else if (game.isInCheck(ChessGame.TeamColor.WHITE)) {
+            return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "WHITE is in check!");
+        } else if (game.isInCheck(ChessGame.TeamColor.BLACK)) {
+            return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "BLACK is in check!");
+        } else if (game.isInStalemate(ChessGame.TeamColor.WHITE) || game.isInStalemate(ChessGame.TeamColor.BLACK)) {
+            endedGames.add(gameData.gameID());
+            return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "Stalemate!");
+        }
+        return null;
     }
 
     private String reversParseMove(ChessMove move) {
@@ -201,7 +295,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
 
     private void sendBoard(WsMessageContext ctx, UserGameCommand command) throws Exception {
-        var gameData = userService.getGame(command.getAuthToken(), command.getGameID());
+        var gameData = userService.getGame(command.getGameID());
         var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game().getBoard());
         var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
         ctx.send(loadBoardMessageJson);
