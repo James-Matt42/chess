@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import io.javalin.websocket.*;
 import org.jetbrains.annotations.NotNull;
 import service.UserService;
-import websocket.commands.ConnectCommand;
 import websocket.commands.MakeMoveCommand;
 import websocket.commands.ParticipationType;
 import websocket.commands.UserGameCommand;
@@ -16,7 +15,6 @@ import websocket.messages.ServerNotificationMessage;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsCloseHandler {
 
@@ -29,7 +27,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
 
     @Override
-    public void handleConnect(@NotNull WsConnectContext ctx) throws Exception {
+    public void handleConnect(@NotNull WsConnectContext ctx) {
         ctx.enableAutomaticPings();
         System.out.println("Websocket connected!");
     }
@@ -42,7 +40,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             makeMove(ctx);
         } else if (map.get("commandType").equals("CONNECT")) {
             try {
-                connect(ctx, map);
+                connect(ctx);
             } catch (Exception e) {
                 var error = new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, e.getMessage());
                 ctx.send(new Gson().toJson(error));
@@ -119,96 +117,64 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     }
 
     @Override
-    public void handleClose(@NotNull WsCloseContext ctx) throws Exception {
+    public void handleClose(@NotNull WsCloseContext ctx) {
         ctx.closeSession();
         System.out.println("Websocket closed!");
     }
 
-    private void connect(WsMessageContext ctx, HashMap<String, String> map) throws Exception {
+    private void connect(WsMessageContext ctx) throws Exception {
         var message = ctx.message();
-//        Necessary because the stupid tests require supporting UserGameCommand instead of my more useful ConnectCommand
-//        that includes the username
-        if (map.size() == 3) {
-            UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
-            String user = userService.getUser(command.getAuthToken());
-            GameData game;
-            try {
-                game = userService.getGame(command.getGameID());
-            } catch (Exception e) {
-                throw new Exception("Error: Requested game doesn't exist");
-            }
+        UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
+        String user = userService.getUser(command.getAuthToken());
+        GameData game;
 
-            var observe = true;
-            ParticipationType participationType = null;
-            if (command.getAuthToken().equals(game.whiteAuthToken())) {
-                observe = false;
-                addUserToMap(ctx, ParticipationType.WHITE, command);
-                participationType = ParticipationType.WHITE;
-            } else if (command.getAuthToken().equals(game.blackAuthToken())) {
-                observe = false;
-                addUserToMap(ctx, ParticipationType.BLACK, command);
-                participationType = ParticipationType.BLACK;
-            }
-            if (observe) {
-                participationType = ParticipationType.OBSERVER;
-                addUserToMap(ctx, ParticipationType.OBSERVER, command);
-            }
-            sendBoard(ctx, command);
+        try {
+            game = userService.getGame(command.getGameID());
+        } catch (Exception e) {
+            throw new Exception("Error: Requested game doesn't exist");
+        }
 
-            var connection = new UserConnection(ctx, participationType);
-            var connections = users.get(command.getGameID());
-            var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
-                    user + " joined the game as " + participationType + "!"));
+        var observe = true;
+        ParticipationType participationType = null;
+        if (command.getAuthToken().equals(game.whiteAuthToken())) {
+            observe = false;
+            addUserToMap(ctx, ParticipationType.WHITE, command);
+            participationType = ParticipationType.WHITE;
+        } else if (command.getAuthToken().equals(game.blackAuthToken())) {
+            observe = false;
+            addUserToMap(ctx, ParticipationType.BLACK, command);
+            participationType = ParticipationType.BLACK;
+        }
+        if (observe) {
+            participationType = ParticipationType.OBSERVER;
+            addUserToMap(ctx, ParticipationType.OBSERVER, command);
+        }
 
-            var iterator = connections.iterator();
-            while (iterator.hasNext()) {
-                var con = iterator.next();
-                if (!con.equals(connection)) {
+        sendBoard(ctx, command);
+
+        var connection = new UserConnection(ctx, participationType);
+        var connections = users.get(command.getGameID());
+        var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
+                user + " joined the game as " + participationType + "!"));
+
+        var iterator = connections.iterator();
+        while (iterator.hasNext()) {
+            var con = iterator.next();
+            if (!con.equals(connection)) {
 //                    Try to send a message. If the connection was closed without a leave message,
 //                    we simply remove the connection from our map
-                    try {
-                        if (!con.ctx().session.isOpen()) {
-                            iterator.remove();
-                        } else {
-                            con.ctx().send(notification);
-                        }
-                    } catch (Exception e) {
-                        connections.remove(con);
+                try {
+                    if (!con.ctx().session.isOpen()) {
+                        iterator.remove();
+                    } else {
+                        con.ctx().send(notification);
                     }
-                }
-            }
-        } else {
-
-            ConnectCommand command = new Gson().fromJson(message, ConnectCommand.class);
-
-//            Verify that the user is authorized to play white or black
-//            Otherwise, the player is an observer, which is fine
-            var game = userService.getGame(command.getAuthToken(), command.getGameID());
-            if (game == null) {
-                throw new Exception("Requested game doesn't exist");
-            }
-            ParticipationType participationType = getParticipationType(command, game);
-
-
-            var connection = new UserConnection(ctx, participationType);
-            if (users.containsKey(command.getGameID())) {
-                users.get(command.getGameID()).add(connection);
-            } else {
-                users.put(command.getGameID(), new HashSet<>());
-                users.get(command.getGameID()).add(connection);
-            }
-
-            sendBoard(ctx, command);
-
-            var connections = users.get(command.getGameID());
-            var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
-                    command.getUsername() + " joined the game as " + participationType.toString() + "!"));
-            for (var con : connections) {
-                if (!con.equals(connection)) {
-                    con.ctx().send(notification);
+                } catch (Exception e) {
+                    iterator.remove();
                 }
             }
         }
+
     }
 
     private void addUserToMap(WsMessageContext ctx, ParticipationType participationType, UserGameCommand command) {
@@ -219,29 +185,6 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             users.put(command.getGameID(), new HashSet<>());
             users.get(command.getGameID()).add(connection);
         }
-    }
-
-    @NotNull
-    private static ParticipationType getParticipationType(ConnectCommand command, GameData game) throws Exception {
-        ParticipationType participationType;
-        if (command.getParticipationType() != null) {
-            if (command.getParticipationType().equals(ParticipationType.WHITE)) {
-                if (!command.getUsername().equals(game.whiteUsername())) {
-                    throw new Exception("You are not authorized to play as WHITE");
-                }
-                participationType = ParticipationType.WHITE;
-            } else if (command.getParticipationType().equals(ParticipationType.BLACK)) {
-                if (!command.getUsername().equals(game.blackUsername())) {
-                    throw new Exception("You are not authorized to play as BLACK");
-                }
-                participationType = ParticipationType.BLACK;
-            } else {
-                participationType = ParticipationType.OBSERVER;
-            }
-        } else {
-            participationType = ParticipationType.OBSERVER;
-        }
-        return participationType;
     }
 
     private void makeMove(WsMessageContext ctx) throws Exception {
@@ -261,7 +204,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             return;
         }
 
-        GameData gameData = null;
+        GameData gameData;
         try {
             gameData = userService.getGame(command.getAuthToken(), command.getGameID());
         } catch (Exception e) {
@@ -273,8 +216,9 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
 
         var color = gameData.game().getTeamTurn() == ChessGame.TeamColor.WHITE ? ChessGame.TeamColor.BLACK : ChessGame.TeamColor.WHITE;
+        var user = userService.getUser(command.getAuthToken());
         var moveNotification = new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
-                color + " " + reversParseMove(command.getMove()).toUpperCase());
+                user + ": " + color + " " + reverseParseMove(command.getMove()).toUpperCase());
 
         var connections = users.get(command.getGameID());
         for (var con : connections) {
@@ -312,7 +256,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         return null;
     }
 
-    private String reversParseMove(ChessMove move) {
+    private String reverseParseMove(ChessMove move) {
         return reverseParsePosition(move.getStartPosition()) + " " + reverseParsePosition(move.getEndPosition());
     }
 
@@ -329,10 +273,4 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         ctx.send(loadBoardMessageJson);
     }
 
-    private void sendBoard(WsMessageContext ctx, MakeMoveCommand command) throws Exception {
-        var gameData = userService.getGame(command.getAuthToken(), command.getGameID());
-        var loadBoardMessage = new LoadBoardMessage(ServerMessage.ServerMessageType.LOAD_GAME, gameData.game());
-        var loadBoardMessageJson = new Gson().toJson(loadBoardMessage);
-        ctx.send(loadBoardMessageJson);
-    }
 }

@@ -1,16 +1,12 @@
 package client;
 
-import chess.ChessBoard;
 import chess.ChessGame;
-import chess.ChessPosition;
 import com.google.gson.Gson;
 import jakarta.websocket.*;
 import websocket.messages.LoadBoardMessage;
 import websocket.messages.ServerErrorMessage;
-import websocket.messages.ServerMessage;
 import websocket.messages.ServerNotificationMessage;
 
-import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
@@ -18,12 +14,10 @@ import java.util.HashMap;
 public class WsClient extends Endpoint {
 
     public Session session;
-    private final String username;
-    private ChessGame.TeamColor playerColor;
+    private final ChessGame.TeamColor playerColor;
     private ChessGame game;
 
-    public WsClient(int port, String username, ChessGame.TeamColor teamColor) throws Exception {
-        this.username = username;
+    public WsClient(int port, ChessGame.TeamColor teamColor) throws Exception {
         this.playerColor = teamColor;
         URI uri = new URI(String.format("ws://localhost:%d/ws", port));
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
@@ -50,7 +44,6 @@ public class WsClient extends Endpoint {
 
     private void parseMessage(String message) {
         var gson = new Gson();
-//        ServerMessage command = gson.fromJson(message, ServerMessage.class);
         HashMap<String, String> map = new Gson().fromJson(message, HashMap.class);
         if (map.get("serverMessageType").equals("LOAD_GAME")) {
             LoadBoardMessage loadBoardMessage = gson.fromJson(message, LoadBoardMessage.class);

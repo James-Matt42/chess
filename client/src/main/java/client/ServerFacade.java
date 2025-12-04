@@ -3,10 +3,7 @@ package client;
 import chess.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.glassfish.tyrus.client.*;
-import websocket.commands.ConnectCommand;
 import websocket.commands.MakeMoveCommand;
-import websocket.commands.ParticipationType;
 import websocket.commands.UserGameCommand;
 
 import java.io.IOException;
@@ -26,11 +23,9 @@ public class ServerFacade {
     private static WsClient wsClient = null;
     private static String username;
 
-    public static final int LOGGED_OUT = 0;
     public static final int LOGGED_IN = 1;
-    public static final int IN_GAME = 2;
 
-    public ServerFacade(int port) throws Exception {
+    public ServerFacade(int port) {
         serverUrl = String.format("http://localhost:%d", port);
         this.port = port;
     }
@@ -148,18 +143,7 @@ public class ServerFacade {
 
     private void startWebsocket(int gameID, ChessGame.TeamColor playerColor) throws Exception {
 //        Create websocket connection
-        wsClient = new WsClient(port, username, playerColor);
-//        Send connect request that then gives the server access to the username and gameID
-//        ParticipationType participationType;
-//        if (playerColor.equals(ChessGame.TeamColor.WHITE)) {
-//            participationType = ParticipationType.WHITE;
-//        } else if (playerColor.equals(ChessGame.TeamColor.BLACK)) {
-//            participationType = ParticipationType.BLACK;
-//        } else {
-//            participationType = ParticipationType.OBSERVER;
-//        }
-
-//        var message = new ConnectCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID, username, participationType);
+        wsClient = new WsClient(port, playerColor);
         var message = new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameID);
         var command = new Gson().toJson(message);
         wsClient.send(command);

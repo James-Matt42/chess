@@ -12,8 +12,6 @@ public class Main {
 
     private static int state;
     private static TeamColor playerColor;
-    private static ChessBoard board;
-    private static DrawBoard drawBoard;
     static LinkedHashMap<Integer, GameData> gameMap;
     private static int currGameID;
     private static boolean observer;
@@ -22,7 +20,7 @@ public class Main {
     static final int LOGGED_IN = 1;
     static final int IN_GAME = 2;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         state = LOGGED_OUT;
 
         ServerFacade facade = new ServerFacade(8080);
@@ -86,14 +84,25 @@ public class Main {
         }
         checkInputSize(3, args);
 
-        var startPos = parsePosition(args[1]);
-        var endPos = parsePosition(args[2]);
+        ChessPosition startPos;
+        ChessPosition endPos;
+        try {
+            startPos = parsePosition(args[1]);
+            endPos = parsePosition(args[2]);
+        } catch (Exception e) {
+            throw new Exception("Error: Invalid move");
+        }
 
         var board = facade.getBoard();
         if (board == null) {
             throw new Exception("The board has not yet arrived... Please wait");
         }
-        var startPiece = board.getPiece(startPos);
+        ChessPiece startPiece;
+        try {
+            startPiece = board.getPiece(startPos);
+        } catch (Exception e) {
+            throw new Exception("Error: Invalid move");
+        }
         if (startPiece == null) {
             throw new Exception("You can only select an existing piece");
         }
@@ -122,7 +131,7 @@ public class Main {
             }
         }
 
-        throw new Exception("Error: Invalid position(s)");
+        throw new Exception("Error: Please enter a valid request");
     }
 
     private static ChessPiece.PieceType getPromotionPiece() {
@@ -248,6 +257,10 @@ public class Main {
             throw new Exception("Game ID must be a number");
         }
 
+        if (gameMap == null) {
+            getGames(facade);
+        }
+
         boolean found = false;
         for (var id : gameMap.keySet()) {
             if (id == gameID) {
@@ -261,7 +274,7 @@ public class Main {
 
         playerColor = TeamColor.WHITE;
         currGameID = gameMap.get(gameID).gameID();
-        facade.observeGame(gameID);
+        facade.observeGame(currGameID);
         state = IN_GAME;
         observer = true;
     }
@@ -332,7 +345,7 @@ public class Main {
 
         String gameName = args[1].strip();
 
-        int gameID = facade.createGame(gameName);
+        facade.createGame(gameName);
         System.out.printf("Game '%s' created successfully%n", gameName);
     }
 
