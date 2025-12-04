@@ -59,7 +59,16 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         var message = ctx.message();
         UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
         var connections = users.get(command.getGameID());
+
         String user = userService.getUser(command.getAuthToken());
+        var gameData = userService.getGame(command.getGameID());
+        if (!(gameData.whiteAuthToken().equals(command.getAuthToken()) ||
+                gameData.blackAuthToken().equals(command.getAuthToken()))) {
+            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: You are not allowed to resign"));
+            ctx.send(notification);
+            return;
+        }
+
         endedGames.add(command.getGameID());
         var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
                 user + " resigned"));

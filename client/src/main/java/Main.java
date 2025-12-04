@@ -206,10 +206,6 @@ public class Main {
         facade.resignGame(currGameID);
     }
 
-    private static void sendCommand(ServerFacade facade, UserGameCommand command) throws Exception {
-//        Send the command to the server
-    }
-
     private static void observeGame(ServerFacade facade, String[] args) throws Exception {
         checkInputSize(2, args);
 
@@ -249,6 +245,10 @@ public class Main {
             gameIDInt = Integer.parseInt(gameID);
         } catch (NumberFormatException e) {
             throw new Exception("Game ID must be a number");
+        }
+
+        if (gameMap == null) {
+            getGames(facade);
         }
 
         boolean found = false;
