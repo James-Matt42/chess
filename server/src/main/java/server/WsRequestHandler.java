@@ -16,6 +16,7 @@ import websocket.messages.ServerNotificationMessage;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 
 public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsCloseHandler {
 
@@ -64,7 +65,13 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         var gameData = userService.getGame(command.getGameID());
         if (!(gameData.whiteAuthToken().equals(command.getAuthToken()) ||
                 gameData.blackAuthToken().equals(command.getAuthToken()))) {
-            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: You are not allowed to resign"));
+            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: An observer is not allowed to resign"));
+            ctx.send(notification);
+            return;
+        }
+
+        if (endedGames.contains(command.getGameID())) {
+            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: You cannot resign after the game is over"));
             ctx.send(notification);
             return;
         }
@@ -91,9 +98,12 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         var user = userService.getUser(command.getAuthToken());
         var notification = new Gson().toJson(new ServerNotificationMessage
                 (ServerMessage.ServerMessageType.NOTIFICATION, user + " left the game"));
-        for (var con : connections) {
+
+        var iterator = connections.iterator();
+        while (iterator.hasNext()) {
+            var con = iterator.next();
             if (con.ctx().equals(ctx)) {
-                connections.remove(con);
+                iterator.remove();
             } else {
                 con.ctx().send(notification);
             }
