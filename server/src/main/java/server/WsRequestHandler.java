@@ -66,13 +66,15 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
                 (gameData.blackAuthToken() != null &&
                         gameData.blackAuthToken().equals(command.getAuthToken())
                 ))) {
-            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: An observer is not allowed to resign"));
+            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR,
+                    "Error: An observer is not allowed to resign"));
             ctx.send(notification);
             return;
         }
 
         if (game.game().isGameOver()) {
-            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: You cannot resign after the game is over"));
+            var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR,
+                    "Error: You cannot resign after the game is over"));
             ctx.send(notification);
             return;
         }

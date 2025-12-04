@@ -49,7 +49,7 @@ public class WsClient extends Endpoint {
             LoadBoardMessage loadBoardMessage = gson.fromJson(message, LoadBoardMessage.class);
             this.game = loadBoardMessage.getGame();
             System.out.println("\n");
-            DrawBoard.drawBoard(game.getBoard(), playerColor);
+            DrawBoard.drawBoard(game.getBoard(), playerColor, null, null);
             System.out.print("[GAME] >> ");
         } else if (map.get("serverMessageType").equals("NOTIFICATION")) {
             ServerNotificationMessage command = gson.fromJson(message, ServerNotificationMessage.class);

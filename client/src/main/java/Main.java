@@ -218,7 +218,7 @@ public class Main {
         } catch (Exception e) {
             throw new Exception("Please select an existing piece");
         }
-        DrawBoard.drawHighlightBoard(board, playerColor, moves, pos);
+        DrawBoard.drawBoard(board, playerColor, moves, pos);
     }
 
     private static void leaveGame(ServerFacade facade) throws IOException {
@@ -336,7 +336,8 @@ public class Main {
             if (blackUser == null) {
                 blackUser = "[OPEN]";
             }
-            System.out.printf("%d. Game: %s\t|\tGame ID: %d\t|\tWhite user: %s\t|\tBlack user: %s%n", game, gameMap.get(game).gameName(), game, whiteUser, blackUser);
+            System.out.printf("%d. Game: %s\t|\tGame ID: %d\t|\tWhite user: %s\t|\tBlack user: %s%n", game,
+                    gameMap.get(game).gameName(), game, whiteUser, blackUser);
         }
     }
 
@@ -428,7 +429,7 @@ public class Main {
     }
 
     private static void drawBoard(ServerFacade facade) {
-        DrawBoard.drawBoard(facade.getBoard(), playerColor);
+        DrawBoard.drawBoard(facade.getBoard(), playerColor, null, null);
     }
 
     private static void getGames(ServerFacade facade) throws Exception {

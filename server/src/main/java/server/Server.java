@@ -5,12 +5,9 @@ import chess.UserData;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import dataaccess.DataAccessException;
-import dataaccess.MemoryDataAccess;
 import dataaccess.SQLDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
-import io.javalin.websocket.WsContext;
-import io.javalin.websocket.WsMessageContext;
 import service.AlreadyTakenException;
 import service.BadRequestException;
 import service.InvalidAuthException;
@@ -55,10 +52,6 @@ public class Server {
             ws.onMessage(wsHandler);
             ws.onClose(wsHandler);
         });
-    }
-
-    private String handleWsMessage(WsMessageContext ctx) {
-        return "Hey";
     }
 
     public int run(int desiredPort) {
