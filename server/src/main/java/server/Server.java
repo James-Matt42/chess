@@ -3,16 +3,20 @@ package server;
 import chess.LoginRequest;
 import chess.UserData;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import dataaccess.DataAccessException;
 import dataaccess.SQLDataAccess;
 import io.javalin.*;
 import io.javalin.http.Context;
+import io.javalin.json.JsonMapper;
+import org.jetbrains.annotations.NotNull;
 import service.AlreadyTakenException;
 import service.BadRequestException;
 import service.InvalidAuthException;
 import service.UserService;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +32,26 @@ public class Server {
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
-        server = Javalin.create(config -> config.staticFiles.add("web"));
+
+        Gson gson = new GsonBuilder().create();
+        JsonMapper gsonMapper = new JsonMapper() {
+            @NotNull
+            @Override
+            public String toJsonString(@NotNull Object obj, @NotNull Type type) {
+                return gson.toJson(obj, type);
+            }
+
+            @NotNull
+            @Override
+            public <T> T fromJsonString(@NotNull String json, @NotNull Type targetType) {
+                return gson.fromJson(json, targetType);
+            }
+        };
+
+        server = Javalin.create(config -> {
+            config.staticFiles.add("web");
+            config.jsonMapper(gsonMapper);
+        });
 
         var wsHandler = new WsRequestHandler(userService);
 
