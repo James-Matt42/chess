@@ -1,11 +1,9 @@
 package client;
 
-import chess.ChessBoard;
-import chess.ChessGame;
-import chess.ChessPiece;
-import chess.ChessPosition;
+import chess.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,7 +28,7 @@ import static ui.EscapeSequences.WHITE_ROOK;
 public class DrawBoard {
 
     public static void drawBoard(ChessBoard board, ChessGame.TeamColor playerColor) {
-        final String borderColor = SET_BG_COLOR_DARK_GREEN;
+        final String borderColor = SET_BG_COLOR_BLACK;
         int colStart = 8;
         int colStop = 0;
         int colStep = -1;
@@ -65,6 +63,72 @@ public class DrawBoard {
         boardString.append(topBottomRow);
 
         System.out.println(boardString);
+    }
+
+    public static void drawHighlightBoard(ChessBoard board, ChessGame.TeamColor playerColor, Collection<ChessMove> moves, ChessPosition rootPos) {
+        final String borderColor = SET_BG_COLOR_BLACK;
+        int colStart = 8;
+        int colStop = 0;
+        int colStep = -1;
+
+        int rowStart = 1;
+        int rowStop = 9;
+        int rowStep = 1;
+        if (Objects.equals(playerColor, ChessGame.TeamColor.BLACK)) {
+            colStart = 1;
+            colStop = 9;
+            colStep = 1;
+
+            rowStart = 8;
+            rowStop = 0;
+            rowStep = -1;
+        }
+
+        StringBuilder boardString = new StringBuilder();
+
+        String topBottomRow = getTopBottomRow(borderColor, playerColor);
+        boardString.append(topBottomRow);
+
+        for (int i = colStart; i != colStop; i += colStep) {
+            boardString.append(borderColor).append(" ").append(i).append(" ");
+            for (int j = rowStart; j != rowStop; j += rowStep) {
+                var piece = board.getPiece(new ChessPosition(i, j));
+                boolean highlight = highlightPos(new ChessPosition(i, j), moves);
+                if (highlight) {
+                    var color = getHighlightBGColor(getBGColor(i, j));
+                    boardString.append(color).append(getPieceType(piece));
+                } else if (ChessPosEquals(new ChessPosition(i, j), rootPos)) {
+                    boardString.append(SET_BG_COLOR_YELLOW).append(getPieceType(piece));
+                } else {
+                    boardString.append(getBGColor(i, j)).append(getPieceType(piece));
+                }
+            }
+            boardString.append(borderColor).append(" ").append(i).append(" ").append(RESET_BG_COLOR).append("\n");
+        }
+
+        boardString.append(topBottomRow);
+
+        System.out.println(boardString);
+    }
+
+    private static boolean ChessPosEquals(ChessPosition pos1, ChessPosition pos2) {
+        return pos1.getRow() == pos2.getRow() && pos1.getColumn() == pos2.getColumn();
+    }
+
+    private static String getHighlightBGColor(String bgColor) {
+        if (bgColor.equals(SET_BG_COLOR_DARK_GREY)) {
+            return SET_BG_COLOR_DARK_GREEN;
+        }
+        return SET_BG_COLOR_GREEN;
+    }
+
+    private static boolean highlightPos(ChessPosition chessPosition, Collection<ChessMove> moves) {
+        for (var move : moves) {
+            if (ChessPosEquals(move.getEndPosition(), chessPosition)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String getTopBottomRow(String borderColor, ChessGame.TeamColor playerColor) {

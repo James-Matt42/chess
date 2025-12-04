@@ -63,8 +63,11 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
 
         String user = userService.getUser(command.getAuthToken());
         var gameData = userService.getGame(command.getGameID());
-        if (!(gameData.whiteAuthToken().equals(command.getAuthToken()) ||
-                gameData.blackAuthToken().equals(command.getAuthToken()))) {
+        if (!((gameData.whiteAuthToken() != null &&
+                gameData.whiteAuthToken().equals(command.getAuthToken())) ||
+                (gameData.blackAuthToken() != null &&
+                        gameData.blackAuthToken().equals(command.getAuthToken())
+                ))) {
             var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: An observer is not allowed to resign"));
             ctx.send(notification);
             return;

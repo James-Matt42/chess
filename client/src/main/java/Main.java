@@ -2,8 +2,6 @@ import chess.*;
 import client.DrawBoard;
 import client.ServerFacade;
 import chess.ChessGame.TeamColor;
-import websocket.commands.MakeMoveCommand;
-import websocket.commands.UserGameCommand;
 
 import java.io.IOException;
 import java.util.*;
@@ -74,7 +72,7 @@ public class Main {
                     case "redraw" -> drawBoard(facade);
                     case "resign" -> resignGame(facade);
                     case "leave" -> leaveGame(facade);
-                    case "highlight" -> highlightMoves(args);
+                    case "highlight" -> highlightMoves(facade, args);
                     default -> help();
                 }
             }
@@ -194,7 +192,19 @@ public class Main {
         return new ChessPosition(row, col);
     }
 
-    private static void highlightMoves(String[] args) {
+    private static void highlightMoves(ServerFacade facade, String[] args) throws Exception {
+        checkInputSize(2, args);
+
+        var pos = parsePosition(args[1]);
+
+        var board = facade.getBoard();
+        Collection<ChessMove> moves;
+        try {
+            moves = board.getPiece(pos).pieceMoves(board, pos);
+        } catch (Exception e) {
+            throw new Exception("Please select an existing piece");
+        }
+        DrawBoard.drawHighlightBoard(board, playerColor, moves, pos);
     }
 
     private static void leaveGame(ServerFacade facade) throws IOException {
@@ -203,7 +213,24 @@ public class Main {
     }
 
     private static void resignGame(ServerFacade facade) throws IOException {
-        facade.resignGame(currGameID);
+        if (ensureResign()) {
+            facade.resignGame(currGameID);
+        } else {
+            System.out.println("Resign cancelled");
+        }
+    }
+
+    private static boolean ensureResign() {
+        System.out.println("Are you sure you want to resign? (y/n)");
+        printPrompt();
+        Scanner scanner = new Scanner(System.in);
+        String response = scanner.nextLine().toLowerCase();
+        while (!(response.equals("y") || response.equals("n"))) {
+            System.out.println("Please enter a valid response (y/n)");
+            printPrompt();
+            response = scanner.nextLine().toLowerCase();
+        }
+        return response.equals("y");
     }
 
     private static void observeGame(ServerFacade facade, String[] args) throws Exception {
