@@ -17,12 +17,14 @@ public class ChessGame {
     private ChessBoard board;
     private TeamColor player;
     private final ArrayList<ChessMove> moveHistory;
+    private boolean resigned;
 
     public ChessGame() {
         this.board = new ChessBoard();
         this.board.resetBoard();
         this.player = TeamColor.WHITE;
         moveHistory = new ArrayList<>();
+        resigned = false;
     }
 
     /**
@@ -39,6 +41,10 @@ public class ChessGame {
      */
     public void setTeamTurn(TeamColor team) {
         player = team;
+    }
+
+    public void resign() {
+        resigned = true;
     }
 
     /**
@@ -161,6 +167,11 @@ public class ChessGame {
             return validMoves.isEmpty();
         }
         return false;
+    }
+
+    public boolean isGameOver() {
+        return resigned || isInCheckmate(TeamColor.WHITE) || isInCheckmate(TeamColor.BLACK) ||
+                isInStalemate(TeamColor.WHITE) || isInStalemate(TeamColor.BLACK);
     }
 
     /**

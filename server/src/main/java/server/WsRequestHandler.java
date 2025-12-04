@@ -22,12 +22,10 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
 
     private final UserService userService;
     private final HashMap<Integer, HashSet<UserConnection>> users;
-    private final HashSet<Integer> endedGames;
 
     public WsRequestHandler(UserService userService) {
         this.userService = userService;
         this.users = new HashMap<>();
-        this.endedGames = new HashSet<>();
     }
 
     @Override
@@ -61,6 +59,8 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
         UserGameCommand command = new Gson().fromJson(message, UserGameCommand.class);
         var connections = users.get(command.getGameID());
 
+        var game = userService.getGame(command.getGameID());
+
         String user = userService.getUser(command.getAuthToken());
         var gameData = userService.getGame(command.getGameID());
         if (!(gameData.whiteAuthToken().equals(command.getAuthToken()) ||
@@ -70,13 +70,15 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             return;
         }
 
-        if (endedGames.contains(command.getGameID())) {
+        if (game.game().isGameOver()) {
             var notification = new Gson().toJson(new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: You cannot resign after the game is over"));
             ctx.send(notification);
             return;
         }
 
-        endedGames.add(command.getGameID());
+//        Mark the game as resigned
+        userService.resignGame(game);
+
         var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
                 user + " resigned"));
         for (var con : connections) {
@@ -154,12 +156,19 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
             var connections = users.get(command.getGameID());
             var notification = new Gson().toJson(new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION,
                     user + " joined the game as " + participationType + "!"));
-            for (var con : connections) {
+
+            var iterator = connections.iterator();
+            while (iterator.hasNext()) {
+                var con = iterator.next();
                 if (!con.equals(connection)) {
 //                    Try to send a message. If the connection was closed without a leave message,
 //                    we simply remove the connection from our map
                     try {
-                        con.ctx().send(notification);
+                        if (!con.ctx().session.isOpen()) {
+                            iterator.remove();
+                        } else {
+                            con.ctx().send(notification);
+                        }
                     } catch (Exception e) {
                         connections.remove(con);
                     }
@@ -235,7 +244,7 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     private void makeMove(WsMessageContext ctx) throws Exception {
         var message = ctx.message();
         MakeMoveCommand command = new Gson().fromJson(message, MakeMoveCommand.class);
-        if (endedGames.contains(command.getGameID())) {
+        if (userService.getGame(command.getGameID()).game().isGameOver()) {
             var error = new ServerErrorMessage(ServerMessage.ServerMessageType.ERROR, "Error: No moves can be made after the game is ended");
             ctx.send(new Gson().toJson(error));
             return;
@@ -287,17 +296,14 @@ public class WsRequestHandler implements WsConnectHandler, WsMessageHandler, WsC
     private ServerNotificationMessage specialGameNotification(GameData gameData) {
         var game = gameData.game();
         if (game.isInCheckmate(ChessGame.TeamColor.WHITE)) {
-            endedGames.add(gameData.gameID());
             return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "WHITE is in checkmate!");
         } else if (game.isInCheckmate(ChessGame.TeamColor.BLACK)) {
-            endedGames.add(gameData.gameID());
             return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "BLACK is in checkmate!");
         } else if (game.isInCheck(ChessGame.TeamColor.WHITE)) {
             return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "WHITE is in check!");
         } else if (game.isInCheck(ChessGame.TeamColor.BLACK)) {
             return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "BLACK is in check!");
         } else if (game.isInStalemate(ChessGame.TeamColor.WHITE) || game.isInStalemate(ChessGame.TeamColor.BLACK)) {
-            endedGames.add(gameData.gameID());
             return new ServerNotificationMessage(ServerMessage.ServerMessageType.NOTIFICATION, "Stalemate!");
         }
         return null;

@@ -222,4 +222,10 @@ public class UserService {
                     null, null, game.gameName(), game.game()));
         }
     }
+
+    public void resignGame(GameData game) throws DataAccessException {
+        game.game().resign();
+        dataAccess.updateGame(game.gameID(), new GameData(game.gameID(), game.whiteUsername(), game.whiteAuthToken(),
+                game.blackUsername(), game.blackAuthToken(), game.gameName(), game.game()));
+    }
 }
